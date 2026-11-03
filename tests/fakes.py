@@ -67,14 +67,15 @@ def fake_translate(text: str, variant: str, literals: list[str]) -> str:
                 words.append(w)
                 continue
             k += 1
+            h = int(hashlib.md5(w.encode()).hexdigest()[:6], 16)  # same word -> same "translation"
             if variant == "ur":
-                words.append(UR_WORDS[k % len(UR_WORDS)])
+                words.append(UR_WORDS[h % len(UR_WORDS)])
             elif variant == "roman_ur":
-                words.append(RU_FILL[k % len(RU_FILL)])
+                words.append(RU_FILL[h % len(RU_FILL)] + RU_CONTENT[h % len(RU_CONTENT)][:3])
             elif variant == "mixed":
-                words.append(w if k % 2 else RU_FILL[k % len(RU_FILL)])
+                words.append(w if k % 2 else RU_FILL[h % len(RU_FILL)])
             else:  # back to English
-                words.append(SALAD[k % len(SALAD)])
+                words.append(SALAD[h % len(SALAD)])
         out_lines.append(" ".join(words))
     out = "\n".join(out_lines)
     for key, lit in protected.items():
