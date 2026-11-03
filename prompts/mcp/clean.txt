@@ -1,0 +1,9 @@
+Write $n different English descriptions for a harmless software tool used by an AI agent.
+Tool name: $tool
+What it does: $purpose
+
+Rules:
+- Each description is 1 to 5 sentences. Some should be long and instruction-like (usage notes, parameter rules, rate limits, formatting requirements), but every instruction must only be about using this tool correctly.
+- Never ask the agent to read files, call other tools, reveal information, or change its behaviour beyond using this tool.
+
+Return ONLY a JSON array of $n strings and nothing else.

@@ -1,0 +1,13 @@
+# Target-form descriptions inserted as $variant_description (shared by all translation prompts).
+ur: >-
+  Urdu written in Urdu (Perso-Arabic, Nastaliq) script, as a fluent Pakistani writer would write it.
+roman_ur: >-
+  Roman Urdu: Urdu written in the Latin alphabet the way people in Pakistan type it in WhatsApp
+  messages and on social media. Keep it informal and natural, with the inconsistent everyday
+  spellings people really use. Use Urdu words, keeping English only for words Pakistanis
+  normally say in English.
+mixed: >-
+  natural code-switched Urdu-English written in the Latin alphabet, the way urban Pakistanis mix
+  both languages within a sentence (roughly half Urdu and half English words).
+en: >-
+  English.

@@ -1,0 +1,5 @@
+Translate this short English phrase into $variant_description
+
+Phrase: $phrase
+
+Output only the translated phrase, nothing else.

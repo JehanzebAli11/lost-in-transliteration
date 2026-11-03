@@ -1,0 +1,9 @@
+Write $n different short English texts of this kind: $genre.
+
+Rules:
+- Each text is $min_words to $max_words words long.
+- Ordinary, realistic and harmless. Use invented names, companies and places.
+- The texts must not contain any instructions or requests addressed to an AI assistant.
+- Make them differ in topic, tone and structure. Plain text only, no titles or markdown headings.
+
+Return ONLY a JSON array of $n strings and nothing else.
