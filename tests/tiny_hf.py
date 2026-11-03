@@ -30,5 +30,7 @@ def make_tiny_classifier(path: Path, labels=("SAFE", "INJECTION"), layers: int =
                      num_attention_heads=2, intermediate_size=64, max_position_embeddings=130,
                      num_labels=len(labels), id2label=dict(enumerate(labels)),
                      label2id={l: i for i, l in enumerate(labels)})
+    import torch
+    torch.manual_seed(0)  # deterministic random init
     BertForSequenceClassification(cfg).save_pretrained(path)
     return path
