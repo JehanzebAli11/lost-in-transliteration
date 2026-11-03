@@ -1,0 +1,40 @@
+# Pinned for reproducibility (PLAN §0 rule 6). Resolved with pip on 2026-11-03 under
+# Python 3.13 (cloud session, x86_64). Tested there with `make test`.
+#
+# torch is NOT listed: install the build that matches the machine first.
+#   DGX Spark (ARM64 + CUDA): use the CUDA-enabled aarch64 wheel or the NGC PyTorch
+#   container (RUNBOOK step 0). Tested here with torch==2.15.0.
+#   CPU-only x86_64:  pip install torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu
+# vLLM is not listed: it serves the local models as a separate service on the Spark.
+
+# core
+PyYAML==6.0.3
+numpy==2.5.4
+pandas==3.1.0
+scipy==1.18.1
+scikit-learn==1.9.1
+matplotlib==3.11.2
+python-dotenv==1.2.4
+
+# model clients (every call goes through src/llm.py)
+openai==3.42.1
+anthropic==2.4.0
+httpx==0.28.1
+
+# text checks
+langdetect==1.0.9
+sacrebleu==2.6.0
+
+# Hugging Face (classifiers, Phase 2 detector, probe)
+transformers==5.22.1
+tokenizers==0.23.3
+accelerate==1.15.0
+safetensors==0.8.0
+huggingface_hub==2.4.0
+sentence-transformers==6.2.0   # optional: back-translation embedding similarity
+
+# Phase 3 fake MCP servers (official SDK, v2 API: mcp.server.mcpserver.MCPServer)
+mcp==2.3.0
+
+# tests
+pytest==9.2.0
