@@ -137,3 +137,13 @@ mcp_scanners:
     flagged_when: "guardrail alert (interactive prompt follows; answer N)"
   # optional: mcp-shield@1.0.4 (MIT; never pass --claude-api-key). False-positives on a param named 'notes'.
   # skipped: snyk-agent-scan (ex mcp-scan) needs SNYK_TOKEN account; mcp-watch is a source-line scanner that missed the fixture.
+
+# ---------------------------------------------------------------- external test set (see research/external_datasets.md)
+external_test_sets:
+  - name: afrasadat_en_ur
+    path: data/external/afrasadat_en_ur.xlsx      # keep git-ignored until licence known
+    sha256: b6883922819ca27d01690a9424ed6d89bac15fd1643727dc657246bb9be1a5ad
+    columns: {text: prompt, label: label, type: attack_type, lang: Lang}   # Lang values: Urdu / Eng / eng
+    variants: [en, ur]                             # no roman_ur, no mixed
+    use: test_only_section_4_1                     # not Phase 2 training, not RQ3
+    preprocessing: [drop_blank_rows, normalise_lang, dedup_within_language, report_edge_case_separately]
