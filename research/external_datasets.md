@@ -61,8 +61,15 @@ What the categories look like (English rows, described rather than quoted):
 4. **Do not use it for RQ3** (model susceptibility). Its goals are not benign or exactly scorable, and some
    rows ask for harmful actions.
 
+## Licence status (owner, 2026-11-03)
+The GitHub repo has **no README and no licence file**. With no licence, default copyright applies: we may read and evaluate on it, but we should **not redistribute** the file or its rows. So:
+- keep it git-ignored;
+- publish only aggregate numbers, plus at most a few short quoted examples with attribution;
+- cite it as "Afra Sadat, english-urdu-prompt-injection-dataset, GitHub, 2026, no licence stated";
+- optionally, ask the author for permission or for a licence before the write-up goes public.
+
+Provenance of the Urdu half is still unknown, so keep it test-only (point 3 above stands).
+
 ## Still needed from the owner
-- **Licence:** is there a LICENSE file or README in the GitHub repo? We need it to state terms. Until then,
-  keep the file outside git, e.g. `data/external/` added to `.gitignore`, and redistribute only derived numbers.
 - **Provenance:** how the Urdu half was produced (human or machine; which tool or model). This decides points 2 and 3.
 - **Paper:** whether there is a paper or report to cite instead of the repo.
