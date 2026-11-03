@@ -266,6 +266,7 @@ mcp:
       command: "TODO_VERIFY: e.g. uvx mcp-scan@<version> scan --json {config_path}"
       parser: json_any_issue
       timeout: 180
+      scans_outputs: false            # description scanner; poisoned_output variants become n/a
       sends_remote: "TODO_VERIFY"
     - name: cisco-mcp-scanner
       enabled: false                  # TODO_VERIFY (YARA analyzer runs locally)
@@ -273,6 +274,7 @@ mcp:
       command: "TODO_VERIFY: e.g. mcp-scanner --analyzers yara --format raw --config-path {config_path}"
       parser: json_any_issue
       timeout: 180
+      scans_outputs: false
       sends_remote: "TODO_VERIFY"
 
 # ----------------------------------------------------------------------------- probe (§10, stretch)
