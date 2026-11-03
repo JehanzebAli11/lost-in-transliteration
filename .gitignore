@@ -1,0 +1,49 @@
+# --- secrets (never commit) ---
+.env
+.env.*
+!.env.example
+
+# --- Phase 3 fake secrets live only on the machine that runs them ---
+sandbox/
+
+# --- trained weights (PLAN §0 rule 5: never publish weights) ---
+models/
+*.safetensors
+*.bin
+*.pt
+*.ckpt
+
+# --- caches ---
+cache/
+.cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+hf_cache/
+wandb/
+
+# --- local environments ---
+.venv/
+venv/
+
+# --- scratch / smoke runs (LIT_PROFILE=smoke writes here) ---
+runs/
+mcp_configs/
+logs/*.log
+nohup.out
+
+# --- large raw results ---
+# Raw JSONL in results/ is committed by default (it is the evidence for every number
+# in the write-up). Only files too large for GitHub are ignored: `make ignore-large`
+# appends any results/*.jsonl over 50 MB to the block below.
+# >>> large-results (managed by scripts/ignore_large_results.py) >>>
+# <<< large-results <<<
+
+# --- OS / editor ---
+.DS_Store
+*.swp
+.idea/
+.vscode/
