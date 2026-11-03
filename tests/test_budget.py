@@ -92,3 +92,25 @@ def test_managed_client_retries_transient(tmp_path):
                        cache=None, sleep=lambda s: None)
     assert mc.chat(model="m", system=None, user="u", temperature=0, max_tokens=5).text == "ok"
     assert inner.n == 3
+
+
+def test_non_retryable_errors_fail_fast(tmp_path):
+    class Bad:
+        n = 0
+
+        def chat(self, **kw):
+            Bad.n += 1
+            raise TypeError("unexpected keyword argument")
+
+    class E400(Exception):
+        status_code = 400
+
+    class E429(Exception):
+        status_code = 429
+    from src.llm import is_retryable
+    assert not is_retryable(E400()) and is_retryable(E429()) and is_retryable(ConnectionError())
+    mc = ManagedClient(Bad(), endpoint="local", stage="t", price=Price(0, 0), budget=None, cache=None,
+                       sleep=lambda s: None)
+    with pytest.raises(TypeError):
+        mc.chat(model="m", system=None, user="u", temperature=0, max_tokens=5)
+    assert Bad.n == 1

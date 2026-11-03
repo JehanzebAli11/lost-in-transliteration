@@ -88,7 +88,12 @@ class OpenAICompatClient:
 
 
 class AnthropicClient:
-    """Anthropic Messages API. Used only to *evaluate* models, never to make data."""
+    """Anthropic Messages API. Used only to *evaluate* models, never to make data.
+
+    Temperature is not sendable on the current API version; responses are sampled at
+    the API default (see chat()).
+    """
+    sends_temperature = False
 
     def __init__(self, api_key: str | None = None, timeout: float = 120.0, sdk_client: Any = None):
         if sdk_client is None:
@@ -97,10 +102,12 @@ class AnthropicClient:
         self._c = sdk_client
 
     def chat(self, *, model, system, user, temperature, max_tokens, seed=None, extra_body=None):
+        # API version 2026-10-21 (anthropic SDK >= 2.0) rejects temperature/top_p/top_k with a
+        # 400, and Claude 4.7+ models only sample at the default (1.0) anyway, so the
+        # requested temperature is deliberately NOT sent. eval_models records this per row.
+        # https://platform.claude.com/docs/en/api/migration-2026-10-21
         kwargs: dict[str, Any] = dict(model=model, max_tokens=max_tokens,
                                       messages=[{"role": "user", "content": user}])
-        if temperature is not None:
-            kwargs["temperature"] = temperature
         if system:
             kwargs["system"] = system
         if extra_body:
@@ -120,7 +127,18 @@ class AnthropicClient:
 
 
 # ----------------------------------------------------------------------------- managed wrapper
-NON_RETRYABLE = (BudgetExceeded, PriceMissing, KeyboardInterrupt)
+NON_RETRYABLE = (BudgetExceeded, PriceMissing, KeyboardInterrupt, TypeError, ValueError,
+                 KeyError, AttributeError, NotImplementedError)
+
+
+def is_retryable(e: Exception) -> bool:
+    """Retry network errors, 408/409/429 and 5xx; never client errors or bugs."""
+    if isinstance(e, NON_RETRYABLE):
+        return False
+    code = getattr(e, "status_code", None) or getattr(getattr(e, "response", None), "status_code", None)
+    if isinstance(code, int) and 400 <= code < 500 and code not in (408, 409, 429):
+        return False
+    return True
 
 
 class ManagedClient:
@@ -162,11 +180,9 @@ class ManagedClient:
                                       temperature=temperature, max_tokens=max_tokens,
                                       seed=seed, extra_body=extra_body)
                 break
-            except NON_RETRYABLE:
-                raise
-            except Exception as e:  # network / rate limit / 5xx
+            except Exception as e:  # network / rate limit / 5xx are retried
                 last = e
-                if attempt == self.retries:
+                if not is_retryable(e) or attempt == self.retries:
                     raise
                 self.sleep(min(60.0, 2.0 ** attempt))
         else:  # pragma: no cover
@@ -209,6 +225,10 @@ def build_inner_client(cfg: Config, endpoint_name: str) -> ChatClient:
     if ep.get("api_key_env") and not key:
         raise RuntimeError(f"endpoint {endpoint_name}: env var {ep['api_key_env']} is not set")
     if ep["provider"] == "anthropic":
+        if ep.get("base_url"):  # only for tests / proxies
+            import anthropic
+            return AnthropicClient(sdk_client=anthropic.Anthropic(api_key=key, base_url=ep["base_url"],
+                                                                  timeout=ep.get("timeout", 120), max_retries=0))
         return AnthropicClient(api_key=key, timeout=ep.get("timeout", 120))
     if ep["provider"] == "openai_compat":
         return OpenAICompatClient(base_url=ep["base_url"], api_key=key,

@@ -133,7 +133,13 @@ def run_model(cfg: Config, entry: dict, tasks: list[dict], *, inner: ChatClient 
         return {"model": name, "status": "skipped", "reason": str(e)}
     todo = [t for t in tasks if task_key(name, t) not in done]
     stop = threading.Event()
-    stats = {"model": name, "status": "ok", "new": 0, "skipped_done": len(tasks) - len(todo)}
+    stats = {"model": name, "status": "ok", "new": 0, "failed": 0, "skipped_done": len(tasks) - len(todo)}
+    # Anthropic's current API cannot take a temperature: record what was really used.
+    is_anthropic = cfg["endpoints"][spec.endpoint]["provider"] == "anthropic"
+    temp_applied = "api_default" if is_anthropic else float(em["temperature"])
+    if is_anthropic and todo:
+        log_event(cfg, f"{name}: Anthropic API 2026-10-21 rejects temperature; sampling at the API "
+                       f"default instead of {em['temperature']} (report as a limitation)", stage="eval_models")
 
     def work(task):
         if stop.is_set():
@@ -151,7 +157,7 @@ def run_model(cfg: Config, entry: dict, tasks: list[dict], *, inner: ChatClient 
                "split": it.get("split"), "position": it.get("position"),
                "system_prompt": system, "user_prompt": user, "response": res.text,
                "input_tokens": res.input_tokens, "output_tokens": res.output_tokens, "cached": res.cached,
-               "temperature": float(em["temperature"]), "max_tokens": int(em["max_tokens"])}
+               "temperature": temp_applied, "max_tokens": int(em["max_tokens"])}
         if task["setting"] == "clean":
             row.update({"success": None, "summary_ok": summary_ok(res.text),
                         "response_script": judge({}, res.text)["response_script"]})
@@ -178,12 +184,21 @@ def run_model(cfg: Config, entry: dict, tasks: list[dict], *, inner: ChatClient 
                 stop.set()
                 stats["status"] = "skipped"
                 continue
-            except Exception as e:  # keep going on single failures; logged
-                log_event(cfg, f"{name}: call failed ({type(e).__name__}: {e})", stage="eval_models")
+            except Exception as e:  # keep going on single failures; log the first few
+                stats["failed"] += 1
+                if stats["failed"] <= 3:
+                    log_event(cfg, f"{name}: call failed ({type(e).__name__}: {str(e)[:300]})",
+                              stage="eval_models")
+                if stats["failed"] >= 20 and stats["new"] == 0 and not stop.is_set():
+                    log_event(cfg, f"{name}: 20 failures and no successes; stopping this model",
+                              stage="eval_models")
+                    stop.set()
                 continue
             if row is not None:
                 out.append(row)
                 stats["new"] += 1
+    if stats["status"] == "ok" and stats["failed"] and stats["new"] == 0:
+        stats["status"] = "failed"
     log_event(cfg, f"{name}: {stats}", stage="eval_models")
     return stats
 

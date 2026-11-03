@@ -126,3 +126,14 @@ def test_eval_models_budget_stop_and_missing_price(built):
     assert by["gemma-local"]["status"] == "ok"  # free local model is unaffected
     assert read_json(cfg.results_dir / "spend.json")["total_usd"] <= 0.0005 * 0.95 + 1e-9
     assert "BUDGET STOP" in cfg.log_file.read_text()
+
+
+def test_model_with_only_failures_is_reported_failed(built):
+    cfg = built
+
+    class Broken:
+        def chat(self, **kw):
+            raise TypeError("bad request shape")
+    stats = em.run(cfg, clients={"claude-haiku": Broken(), "openrouter-small": FakeLLM(), "gemma-local": FakeLLM()},
+                   only=["claude-haiku"])
+    assert stats[0]["status"] == "failed" and stats[0]["new"] == 0
