@@ -1,3 +1,6 @@
 .venv*/
 node_modules/
+npm/package-lock.json
+ext/
+.cargo-ramparts/
 *.log

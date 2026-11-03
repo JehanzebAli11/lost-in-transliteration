@@ -1,0 +1,89 @@
+### FAKE_MCP_CLEAN=0  ramparts scan stdio:<python>:fake_server.py --format table
+RAMPARTS v0.8.10 · scanner for MCP + skills
+2026-11-03T10:02:41.112782Z  WARN Security issue detected in tool 'add_numbers': 1 rules matched
+Ramparts MCP Server Scan Result
+URL: stdio:/home/user/lost-in-transliteration/research/scratch/.venv-mcp/bin/python:/home/user/lost-in-transliteration/research/scratch/fake_server.py
+Status: SUCCESS
+Response Time: 941ms
+Timestamp: 2026-11-03 10:02:40 UTC
+
+Server Information
+Name: fake-notes-server
+Version: 0.0.1
+Capabilities: tools, resources, prompts
+
+Tools
+Number of tools: 2
+
+Security Assessments
+Assessments executed: Tool Security (Tool Poisoning, Secrets Leakage, SQL Injection, Command Injection, Path Traversal, Auth Bypass), Input Security (Prompt Injection, PII Leakage, Jailbreak)
+
+Security Assessment Results
+🌐 fake-notes-server
+  ✅ All tools passed security checks
+
+  └── add_numbers passed
+  └── get_weather passed
+
+Summary:
+  • Tools scanned: 2
+  • Status: PASSED All tools passed security checks
+
+YARA Scan Results
+⚠️ PRE-SCAN - WARNING
+  Context: Pre-scan completed: 15 rules executed on 2 items
+  Items scanned: 2
+  Security matches: 1
+  Rules executed: path_traversal:*, cross_origin_escalation:*, command_injection:*, skill_tool_chaining_abuse:*, hacktools:*, secrets_leakage:*, sql_injection:*, cryptominers:*, webshells:*, mcp_config_risk:*, skill_credential_harvesting:*, skill_prompt_injection:*, skill_system_manipulation:*, malware:*, skill_authority:*
+  Security issues detected: skill_prompt_injection:PromptInjectionSignature
+
+🔍 Detailed Results Individual Security Matches:
+
+⚠️ add_numbers (tool)
+  Rule: PromptInjectionSignature (HIGH)
+  Name: Prompt Injection Signature
+  Description: Detects classic instruction-override / role-redefinition / privilege-escalation patterns that override or coerce the agent's behavior (the 'ignore previous instructions' family)
+  Author: Ramparts Security Team (adapted from cisco-ai-defense/skill-scanner, Apache 2.0)
+  Version: 1.0
+  OWASP MCP Top 10: MCP01
+  Context: tool matched by security rule PromptInjectionSignature
+
+exit=0
+### FAKE_MCP_CLEAN=1  ramparts scan stdio:<python>:fake_server.py --format table
+RAMPARTS v0.8.10 · scanner for MCP + skills
+Ramparts MCP Server Scan Result
+URL: stdio:/home/user/lost-in-transliteration/research/scratch/.venv-mcp/bin/python:/home/user/lost-in-transliteration/research/scratch/fake_server.py
+Status: SUCCESS
+Response Time: 1046ms
+Timestamp: 2026-11-03 10:02:41 UTC
+
+Server Information
+Name: fake-notes-server
+Version: 0.0.1
+Capabilities: tools, resources, prompts
+
+Tools
+Number of tools: 2
+
+Security Assessments
+Assessments executed: Tool Security (Tool Poisoning, Secrets Leakage, SQL Injection, Command Injection, Path Traversal, Auth Bypass), Input Security (Prompt Injection, PII Leakage, Jailbreak)
+
+Security Assessment Results
+🌐 fake-notes-server
+  ✅ All tools passed security checks
+
+  └── add_numbers passed
+  └── get_weather passed
+
+Summary:
+  • Tools scanned: 2
+  • Status: PASSED All tools passed security checks
+
+YARA Scan Results
+✅ PRE-SCAN - PASSED
+  Context: Pre-scan completed: 15 rules executed on 2 items
+  Items scanned: 2
+  Security matches: 0
+  Rules executed: cross_origin_escalation:*, webshells:*, skill_authority:*, secrets_leakage:*, path_traversal:*, mcp_config_risk:*, sql_injection:*, skill_prompt_injection:*, cryptominers:*, command_injection:*, skill_credential_harvesting:*, skill_tool_chaining_abuse:*, malware:*, skill_system_manipulation:*, hacktools:*
+
+exit=0

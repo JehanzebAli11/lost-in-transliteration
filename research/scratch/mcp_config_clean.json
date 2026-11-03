@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "fake-notes-server": {
+      "command": "/home/user/lost-in-transliteration/research/scratch/.venv-mcp/bin/python",
+      "args": ["/home/user/lost-in-transliteration/research/scratch/fake_server.py"],
+      "env": {"FAKE_MCP_CLEAN": "1"}
+    }
+  }
+}
