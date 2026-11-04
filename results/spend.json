@@ -1,0 +1,36 @@
+{
+  "max_usd": 3.0,
+  "stop_fraction": 0.95,
+  "total_usd": 0.17569686,
+  "calls": 2651,
+  "cached_calls": 124,
+  "by_model": {
+    "google/gemma-4-31b-it": {
+      "calls": 2584,
+      "input_tokens": 481956,
+      "output_tokens": 110832,
+      "usd": 0.140724
+    },
+    "qwen/qwen3.5-27b": {
+      "calls": 67,
+      "input_tokens": 21501,
+      "output_tokens": 11301,
+      "usd": 0.03497286
+    }
+  },
+  "by_stage": {
+    "build_dataset": {
+      "calls": 36,
+      "usd": 0.0108648
+    },
+    "translate": {
+      "calls": 2230,
+      "usd": 0.1229952
+    },
+    "native": {
+      "calls": 385,
+      "usd": 0.04183686
+    }
+  },
+  "updated": "2026-11-04T23:14:53+00:00"
+}

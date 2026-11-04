@@ -1,0 +1,84 @@
+{
+  "attacks": {
+    "ur": {
+      "source": 400,
+      "translated": 395,
+      "dropped_last_run": 5,
+      "attempts_histogram": {
+        "1": 390,
+        "2": 2,
+        "3": 3
+      }
+    },
+    "roman_ur": {
+      "source": 400,
+      "translated": 399,
+      "dropped_last_run": 1,
+      "attempts_histogram": {
+        "1": 398,
+        "2": 1
+      }
+    },
+    "mixed": {
+      "source": 400,
+      "translated": 400,
+      "dropped_last_run": 0,
+      "attempts_histogram": {
+        "1": 400
+      }
+    }
+  },
+  "benign": {
+    "ur": {
+      "source": 300,
+      "translated": 300,
+      "dropped_last_run": 0,
+      "attempts_histogram": {
+        "1": 299,
+        "2": 1
+      }
+    },
+    "roman_ur": {
+      "source": 300,
+      "translated": 300,
+      "dropped_last_run": 0,
+      "attempts_histogram": {
+        "1": 300
+      }
+    },
+    "mixed": {
+      "source": 300,
+      "translated": 300,
+      "dropped_last_run": 0,
+      "attempts_histogram": {
+        "1": 300
+      }
+    }
+  },
+  "carriers": {
+    "ur": {
+      "source": 30,
+      "translated": 30,
+      "dropped_last_run": 0,
+      "attempts_histogram": {
+        "1": 30
+      }
+    },
+    "roman_ur": {
+      "source": 30,
+      "translated": 30,
+      "dropped_last_run": 0,
+      "attempts_histogram": {
+        "1": 30
+      }
+    },
+    "mixed": {
+      "source": 30,
+      "translated": 30,
+      "dropped_last_run": 0,
+      "attempts_histogram": {
+        "1": 30
+      }
+    }
+  }
+}
