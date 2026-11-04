@@ -25,7 +25,7 @@ torch.manual_seed(SEED)
 CLASSIFIERS = [
     ("protectai/deberta-v3-base-prompt-injection-v2", "90c9989b1a342275dd0d1a95aad283c04e075671", 0.92),
     ("meta-llama/Llama-Prompt-Guard-2-86M", "a8ded8e697ce7c355e395a0df51f94adb4a2fd27", 0.5),
-    ("meta-llama/Llama-Prompt-Guard-2-22M", None, 0.5),
+    ("meta-llama/Llama-Prompt-Guard-2-22M", "11614a155199674a0a95e6602d6ab0417b790ed0", 0.5),
     ("Horizon-Labs/prompt-injection-guard-base", "8c321b08c01102a0a3a377f8eecda0cab80e8758", 0.5),
     ("proventra/mdeberta-v3-base-prompt-injection", "b8a89d3096cf11a71d57b283c854f5ae2ed3df83", 0.5),
     ("patronus-studio/wolf-defender-prompt-injection", "24e930776f6b491cade57341ca37304b90fba2c8", 0.5),

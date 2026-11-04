@@ -73,3 +73,10 @@ Provenance of the Urdu half is still unknown, so keep it test-only (point 3 abov
 ## Still needed from the owner
 - **Provenance:** how the Urdu half was produced (human or machine; which tool or model). This decides points 2 and 3.
 - **Paper:** whether there is a paper or report to cite instead of the repo.
+
+## Preliminary classifier results (2026-11-04)
+All six §4.1 candidates were run on the deduplicated set using the cloud CPU. Results and how to read them
+are in `research/prelim/README.md`. In short:
+- ProtectAI flags 80% of benign Urdu items (AUC 0.99 → 0.79).
+- At default thresholds, Prompt Guard 2 almost never fires on Urdu: 22M Urdu jailbreak TPR = 0.00.
+- Horizon-Labs and wolf-defender stay near ceiling, but training-data contamination cannot be ruled out.
