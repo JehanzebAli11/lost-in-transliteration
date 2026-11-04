@@ -12,7 +12,7 @@ ANSI colours stripped.
 | **Cisco AI Defense `mcp-scanner`** | 4.8.7 | Apache-2.0 | `pip install cisco-ai-mcp-scanner` | Yes with `--analyzers yara` | No (for YARA) | **flagged** HIGH | clean | **Use** |
 | **Ramparts** (Highflame) | 0.8.10 | Apache-2.0 | `cargo install ramparts` + rules dir | Yes without `LLM_API_KEY` | No | **flagged** HIGH | clean | **Use** |
 | **mcp-guardian** (alexandriashai) | 2.4.0 | MIT | `npm i mcp-guardian` | Yes | No | **flagged** critical | clean | **Use** |
-| **mcp-context-protector** (Trail of Bits) | git `05e56c1` | Apache-2.0 | `git clone` + `uv sync` | Yes (local Prompt Guard 2) | HF account + gated licence for PG2 | installs and reaches the guardrail step; PG2 download needs `HF_TOKEN` | — | **Use if `HF_TOKEN`** |
+| **mcp-context-protector** (Trail of Bits) | git `05e56c1` | Apache-2.0 | `git clone` + `uv sync` | Yes (local Prompt Guard 2) | HF account + gated licence for PG2 | **guardrail crashes** (asyncio bug) and reports the crash as an alert | would alert too (same crash) | **Don't use as-is; score descriptions with PG2 directly** |
 | MCP-Shield (riseandignite) | 1.0.4 | MIT | `npm i mcp-shield` | Yes without `--claude-api-key` | No | flagged MEDIUM | **also flagged** (param name `notes`) | Optional |
 | mcp-watch (kapilduraphe) | 2.0.1 | MIT | `npm i mcp-watch` | Yes | No | **missed** | clean | Skip |
 | Snyk Agent Scan (ex-Invariant `mcp-scan`) | 0.6.10 | Apache-2.0 | `pip install snyk-agent-scan` | **No**: sends tool descriptions to `api.snyk.io` | **Yes**: `SNYK_TOKEN` | not run | not run | **Skip (account)** |
@@ -21,7 +21,7 @@ ANSI colours stripped.
 1. Cisco `mcp-scanner` (YARA).
 2. Ramparts (YARA).
 3. mcp-guardian (regex).
-4. mcp-context-protector with LlamaFirewall/Prompt Guard 2, once the owner provides `HF_TOKEN` with the Llama Prompt Guard 2 licence accepted.
+4. **Prompt Guard 2 applied directly to tool descriptions**, standing in for mcp-context-protector. That gateway's guardrail is broken at upstream HEAD `05e56c1` with llamafirewall 1.0.3 (see §4).
 
 Tools 1–3 are three independent rule sets, all fully offline with no account. Tool 4 is the only local *ML-based*
 (multilingual) detector in the set, and the most interesting contrast for RQ6. If time is short, run Cisco and
@@ -202,7 +202,27 @@ exit=2
 ```
 The clean config gives `"status": "clean"` and `exit=0`.
 
-## 4. mcp-context-protector (Trail of Bits): installed; guardrail blocked on gated model ⚠️
+## 4. mcp-context-protector (Trail of Bits): installed; guardrail broken ❌
+
+**Update 2026-11-04 (with Prompt Guard 2 access, `research/scratch/outputs/pg_access_check.txt`).** The model now downloads, but the guardrail
+crashes. `LlamaFirewallProvider.check_server_config` calls the synchronous `lf.scan()`, which calls `asyncio.run()` inside the wrapper's
+already-running event loop:
+```
+RuntimeError: asyncio.run() cannot be called from a running event loop
+==== GUARDRAIL CHECK: ALERT ====
+Provider: LlamaFirewall
+Alert: Error checking configuration: asyncio.run() cannot be called from a running event loop
+```
+The error is turned into a `GuardrailAlert`, so the tool **fails closed**: it would "alert" on every server, clean or poisoned. Its verdict carries
+no information. Upstream HEAD is still `05e56c1` (checked 2026-11-04), so there is no fix to pull.
+- *Inference, not run:* the clean variant goes through the same code path, so it would get the same error alert.
+- **For RQ6, use the substitute:** score each tool description, or the whole `str(tools)` config string as this gateway does, with
+  `meta-llama/Llama-Prompt-Guard-2-86M` directly. Use transformers (index 1 = malicious, max 512 tokens, segment longer text), or call
+  `await LlamaFirewall(...).scan_async(...)`. This measures the same detector the gateway would have used.
+- Patching the gateway (switching to `scan_async`) is possible but would change third-party code. If you do it, report it as "patched".
+
+Original notes from 2026-11-03 follow.
+
 
 - **Repo:** https://github.com/trailofbits/mcp-context-protector (tested at commit `05e56c1`, 2026-02-13)
 - **Licence:** Apache-2.0

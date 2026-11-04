@@ -19,10 +19,10 @@ classifiers:
   - id: meta-llama/Llama-Prompt-Guard-2-86M
     revision: a8ded8e697ce7c355e395a0df51f94adb4a2fd27
     licence: llama4            # Llama 4 Community License
-    gated: true                # manual approval: owner accepts licence on huggingface.co + HF_TOKEN
-    labels: {0: BENIGN, 1: MALICIOUS}   # read from public ONNX mirror; re-verify on official repo once access granted
-    positive_label: MALICIOUS
-    threshold: argmax          # none documented; save P(MALICIOUS)
+    gated: true                # manual approval; owner's access granted 2026-11-04 (86M and 22M; PG1 not requested/approved)
+    labels: {0: LABEL_0, 1: LABEL_1}    # official config.json has NO id2label (checked with access 2026-11-04); card: index 1 = malicious
+    positive_label: LABEL_1    # select by index 1, not by name
+    threshold: argmax          # none documented; save P(index 1)
     max_length: 512            # card: split longer inputs into segments
     multilingual: true         # evaluated en fr de hi it pt es th (not Urdu)
     fallback_if_no_access:
@@ -128,7 +128,10 @@ mcp_scanners:
     local_only: true
     command: "mcp-guardian --no-config --json {mcp_config_json}"
     flagged_when: "exit code >= 1"
-  - name: mcp-context-protector
+  - name: prompt-guard-2-on-descriptions   # substitute for mcp-context-protector (guardrail crashes, see mcp_scanners.md §4)
+    model: meta-llama/Llama-Prompt-Guard-2-86M
+    flagged_when: "argmax == 1 on any tool description"
+  - name: mcp-context-protector-broken
     install: "git clone https://github.com/trailofbits/mcp-context-protector && git -C mcp-context-protector checkout 05e56c1616f4382ca25eb15bdfc98c4967bbdd74 && cd mcp-context-protector && uv sync"
     licence: apache-2.0
     local_only: true          # LlamaFirewall runs Prompt Guard 2 locally
