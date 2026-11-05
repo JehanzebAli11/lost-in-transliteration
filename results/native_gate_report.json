@@ -1,0 +1,24 @@
+{
+  "writer_model": "qwen/qwen3.5-27b",
+  "labeler_model": "google/gemma-4-31b-it",
+  "generated": 240,
+  "passed_text_gates": 216,
+  "passed_label_gate": 214,
+  "dropped": {
+    "wrong_script": 24,
+    "label_disagree": 2
+  },
+  "final": 114,
+  "final_by_label_lang": {
+    "attack/mixed": 24,
+    "attack/roman_ur": 27,
+    "attack/ur": 6,
+    "benign/mixed": 24,
+    "benign/roman_ur": 27,
+    "benign/ur": 6
+  },
+  "shortfall": {
+    "attack/ur": 3,
+    "benign/ur": 3
+  }
+}

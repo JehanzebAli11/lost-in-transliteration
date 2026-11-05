@@ -1,0 +1,152 @@
+# Suggested config.yaml fragments from the research branch (checked 2026-11-03).
+# Every ID below was resolved against the Hugging Face / PyPI / npm / crates APIs on that date.
+# Sources and caveats: research/classifiers.md and research/mcp_scanners.md.
+# Revisions are the HF commit sha at check time; pin them for reproducibility.
+
+checked_on: "2026-11-03"
+
+# ---------------------------------------------------------------- §4.1 classifiers
+classifiers:
+  - id: protectai/deberta-v3-base-prompt-injection-v2
+    revision: 90c9989b1a342275dd0d1a95aad283c04e075671
+    licence: apache-2.0
+    gated: false
+    labels: {0: SAFE, 1: INJECTION}
+    positive_label: INJECTION
+    threshold: 0.92            # LLM Guard code default (score > 0.92); card documents none. Also save raw P for AUC.
+    max_length: 512
+    multilingual: false        # card: does not handle non-English prompts; project archived
+  - id: meta-llama/Llama-Prompt-Guard-2-86M
+    revision: a8ded8e697ce7c355e395a0df51f94adb4a2fd27
+    licence: llama4            # Llama 4 Community License
+    gated: true                # manual approval; owner's access granted 2026-11-04 (86M and 22M; PG1 not requested/approved)
+    labels: {0: LABEL_0, 1: LABEL_1}    # official config.json has NO id2label (checked with access 2026-11-04); card: index 1 = malicious
+    positive_label: LABEL_1    # select by index 1, not by name
+    threshold: argmax          # none documented; save P(index 1)
+    max_length: 512            # card: split longer inputs into segments
+    multilingual: true         # evaluated en fr de hi it pt es th (not Urdu)
+    fallback_if_no_access:
+      id: proventra/mdeberta-v3-base-prompt-injection
+      revision: b8a89d3096cf11a71d57b283c854f5ae2ed3df83
+      licence: mit
+      gated: false
+      labels: {0: SAFE, 1: INJECTION}
+      positive_label: INJECTION
+      threshold: argmax
+      max_length: 512
+  - id: Horizon-Labs/prompt-injection-guard-base
+    revision: 8c321b08c01102a0a3a377f8eecda0cab80e8758   # repo updated 2026-10-31; pin
+    licence: apache-2.0
+    gated: false
+    labels: {0: SAFE, 1: INJECTION}
+    positive_label: INJECTION
+    threshold: 0.5             # documented default
+    max_length: 512            # model supports longer; 512 for parity
+    multilingual: true         # 30 training languages, Urdu NOT among them
+  # optional 4th
+  - id: patronus-studio/wolf-defender-prompt-injection
+    revision: 24e930776f6b491cade57341ca37304b90fba2c8
+    licence: apache-2.0
+    gated: false
+    labels: {0: benign, 1: injection}   # lowercase in config.json (card says upper case)
+    positive_label: injection
+    threshold: 0.5
+    max_length: 512
+    optional: true
+# Not recommended for headline numbers (flagged benign smoke text with P>=0.99):
+#   deepset/deberta-v3-base-injection, fmops/distilbert-prompt-injection,
+#   daniel315a/xlm-roberta-prompt-injection-multilingual
+
+# ---------------------------------------------------------------- §5 Phase 2 encoders
+encoders:
+  - id: FacebookAI/xlm-roberta-base          # alias xlm-roberta-base redirects
+    revision: e73636d4f797dec63c3081bb6ed5c7b0bb3f2089
+    licence: mit
+    gated: false
+    params: 278.9M
+    max_length: 256                          # PLAN §5.1 (model max 512)
+    notes: CC-100 includes Urdu script and "Urdu Romanized"; primary
+  - id: microsoft/mdeberta-v3-base
+    revision: a0484667b22365f84929a935b5e50a51f71f159d
+    licence: mit
+    gated: false
+    params: 86M backbone + 190M embeddings
+    max_length: 256
+    notes: CC-100 like XLM-R; pytorch_model.bin only; train in bf16/fp32 (not fp16); needs sentencepiece
+  - id: distilbert/distilbert-base-multilingual-cased   # alias redirects
+    revision: 45c032ab32cc946ad88a166f7cb282f58c753c2e
+    licence: apache-2.0
+    gated: false
+    params: 135.4M
+    max_length: 256
+    notes: Wikipedia 104 languages incl. Urdu script; no romanised data; small comparison
+
+# ---------------------------------------------------------------- §3.6 native-set writer (not Gemma)
+native_set_writer:
+  primary:
+    id: Qwen/Qwen3.5-27B
+    revision: fc05daec18b0a78c049392ed2e771dde82bdf654
+    licence: apache-2.0
+    gated: false
+    size: 27.8B dense, ~55.6 GB BF16
+    notes: card claims 201 languages (list not on card); Urdu listed for Qwen3 lineage. Disable thinking mode.
+  stronger_alternative:
+    id: Qwen/Qwen3.5-122B-A10B-GPTQ-Int4
+    revision: 30cd92cba9707a9aba09d1e490ed4b66b78e9606
+    licence: apache-2.0
+    gated: false
+    size: 122B MoE (10B active), ~78.9 GB
+  fallback_other_family:
+    id: enstazao/Qalb-1.0-8B-Instruct
+    revision: 6792251690a01687b7ed19690914321e0c67c738
+    licence: card says apache-2.0, but Llama-3.1 derivative -> treat as Llama 3.1 Community License
+    gated: false
+    notes: Urdu-specialised; Roman Urdu ability unknown
+  avoid: [Qwen/Qwen3.8-27B]   # wrote ~80k training examples of Horizon-Labs classifier (evaluated in §4.1)
+  caveat: no model reports a Roman Urdu benchmark; the 20-item smoke test / owner must sign off
+
+# ---------------------------------------------------------------- §6 Phase 3 MCP tools
+mcp_sdk: "mcp==2.3.0"   # v2 renamed FastMCP -> MCPServer (from mcp.server.mcpserver import MCPServer)
+mcp_scanners:
+  - name: cisco-mcp-scanner
+    install: "pip install cisco-ai-mcp-scanner==4.8.7"
+    licence: apache-2.0
+    local_only: true          # with --analyzers yara (do not use 'api' analyzer: needs Cisco account)
+    command: "mcp-scanner --analyzers yara --raw stdio --stdio-command {python} --stdio-arg {server}"
+    flagged_when: "is_safe == false"
+  - name: ramparts
+    install: "cargo install ramparts --version 0.8.10"
+    rules: "git clone --depth 1 --branch v0.8.10 https://github.com/highflame-ai/ramparts  # set RAMPARTS_RULES_DIR=<clone>/rules"
+    licence: apache-2.0
+    local_only: true          # no LLM_API_KEY set
+    command: "ramparts scan stdio:{python}:{server} --format json"
+    pre_run: "rm -f ~/.ramparts/content-baseline.json"
+    flagged_when: "yara_results non-empty, ignoring rule MCPToolChanged"
+  - name: mcp-guardian
+    install: "npm install mcp-guardian@2.4.0"
+    licence: mit
+    local_only: true
+    command: "mcp-guardian --no-config --json {mcp_config_json}"
+    flagged_when: "exit code >= 1"
+  - name: prompt-guard-2-on-descriptions   # substitute for mcp-context-protector (guardrail crashes, see mcp_scanners.md §4)
+    model: meta-llama/Llama-Prompt-Guard-2-86M
+    flagged_when: "argmax == 1 on any tool description"
+  - name: mcp-context-protector-broken
+    install: "git clone https://github.com/trailofbits/mcp-context-protector && git -C mcp-context-protector checkout 05e56c1616f4382ca25eb15bdfc98c4967bbdd74 && cd mcp-context-protector && uv sync"
+    licence: apache-2.0
+    local_only: true          # LlamaFirewall runs Prompt Guard 2 locally
+    requires: HF_TOKEN with meta-llama/Llama-Prompt-Guard-2-86M licence accepted
+    command: "uv run mcp-context-protector --review-server --guardrail-provider LlamaFirewall --command '{python} {server}' --server-config-file {tmp_json}"
+    flagged_when: "guardrail alert (interactive prompt follows; answer N)"
+  # optional: mcp-shield@1.0.4 (MIT; never pass --claude-api-key). False-positives on a param named 'notes'.
+  # skipped: snyk-agent-scan (ex mcp-scan) needs SNYK_TOKEN account; mcp-watch is a source-line scanner that missed the fixture.
+
+# ---------------------------------------------------------------- external test set (see research/external_datasets.md)
+external_test_sets:
+  - name: afrasadat_en_ur
+    path: data/external/afrasadat_en_ur.xlsx      # keep git-ignored until licence known
+    sha256: b6883922819ca27d01690a9424ed6d89bac15fd1643727dc657246bb9be1a5ad
+    columns: {text: prompt, label: label, type: attack_type, lang: Lang}   # Lang values: Urdu / Eng / eng
+    variants: [en, ur]                             # no roman_ur, no mixed
+    use: test_only_section_4_1                     # not Phase 2 training, not RQ3
+    preprocessing: [drop_blank_rows, normalise_lang, dedup_within_language, report_edge_case_separately]

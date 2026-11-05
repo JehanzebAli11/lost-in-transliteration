@@ -1,0 +1,71 @@
+{
+  "source_sha256": "b6883922819ca27d01690a9424ed6d89bac15fd1643727dc657246bb9be1a5ad",
+  "rows_in_sheet": 12419,
+  "unique_items": 5043,
+  "dedup_label_conflicts": 0,
+  "seed": 0,
+  "torch": "2.15.0+cpu",
+  "threads": 4,
+  "classifiers": {
+    "protectai/deberta-v3-base-prompt-injection-v2": {
+      "revision": "90c9989b1a342275dd0d1a95aad283c04e075671",
+      "threshold": 0.92,
+      "id2label": {
+        "0": "SAFE",
+        "1": "INJECTION"
+      },
+      "truncated_items": 0,
+      "seconds": 328.5
+    },
+    "meta-llama/Llama-Prompt-Guard-2-86M": {
+      "revision": "a8ded8e697ce7c355e395a0df51f94adb4a2fd27",
+      "threshold": 0.5,
+      "id2label": {
+        "0": "LABEL_0",
+        "1": "LABEL_1"
+      },
+      "truncated_items": 0,
+      "seconds": 294.3
+    },
+    "meta-llama/Llama-Prompt-Guard-2-22M": {
+      "revision": null,
+      "threshold": 0.5,
+      "id2label": {
+        "0": "LABEL_0",
+        "1": "LABEL_1"
+      },
+      "truncated_items": 0,
+      "seconds": 68.6
+    },
+    "Horizon-Labs/prompt-injection-guard-base": {
+      "revision": "8c321b08c01102a0a3a377f8eecda0cab80e8758",
+      "threshold": 0.5,
+      "id2label": {
+        "0": "SAFE",
+        "1": "INJECTION"
+      },
+      "truncated_items": 0,
+      "seconds": 251.5
+    },
+    "proventra/mdeberta-v3-base-prompt-injection": {
+      "revision": "b8a89d3096cf11a71d57b283c854f5ae2ed3df83",
+      "threshold": 0.5,
+      "id2label": {
+        "0": "SAFE",
+        "1": "INJECTION"
+      },
+      "truncated_items": 0,
+      "seconds": 290.1
+    },
+    "patronus-studio/wolf-defender-prompt-injection": {
+      "revision": "24e930776f6b491cade57341ca37304b90fba2c8",
+      "threshold": 0.5,
+      "id2label": {
+        "0": "benign",
+        "1": "injection"
+      },
+      "truncated_items": 0,
+      "seconds": 262.6
+    }
+  }
+}

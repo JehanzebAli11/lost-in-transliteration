@@ -1,0 +1,82 @@
+### snyk-agent-scan inspect
+Agent Scan must contact MCP servers to inspect their tools.
+Stdio servers launch local subprocesses; remote servers make outbound network 
+requests.
+Review each server below and confirm whether Agent Scan may contact it.
+Tip: pass --dangerously-run-mcp-servers to skip these prompts, or set 
+--suppress-mcpserver-io=true to hide server stderr output.
+
+Stdio MCP servers (require consent):
+
+  [1] fake-notes-server
+      config : 
+/home/user/lost-in-transliteration/research/scratch/mcp_config.json
+      command: 
+/home/user/lost-in-transliteration/research/scratch/.venv-mcp/bin/python 
+/home/user/lost-in-transliteration/research/scratch/fake_server.py
+      Allow Agent Scan to start 'fake-notes-server'? [y/N]:       Declined: 'fake-notes-server' will not be started.
+
+Proceeding with 0 of 1 MCP servers. Skipped: 1.
+
+Note: declined servers will not be contacted by Agent Scan. Agent Scan may still
+show analysis results for them if Snyk recognizes the server from prior scans — 
+these results are not based on your own machine's behavior.
+
+{
+  "mcp_config.json": {
+    "client": "mcp_config.json",
+    "path": "mcp_config.json",
+    "servers": [
+      {
+        "name": "fake-notes-server",
+        "config_path": "/home/user/lost-in-transliteration/research/scratch/mcp_config.json",
+        "server": {
+          "command": "/home/user/lost-in-transliteration/research/scratch/.venv-mcp/bin/python",
+          "args": [
+            "/home/user/lost-in-transliteration/research/scratch/fake_server.py"
+          ],
+          "type": "stdio",
+          "env": null,
+          "binary_identifier": null
+        },
+        "signature": null,
+        "error": {
+          "message": "Skipped by user consent (MCP server was not contacted)",
+          "exception": null,
+          "traceback": null,
+          "is_failure": true,
+          "category": "user_declined",
+          "server_output": null
+        }
+      }
+    ],
+    "skills": [],
+    "error": null
+  }
+}
+exit=0
+### snyk-agent-scan scan (no SNYK_TOKEN)
+Agent Scan must contact MCP servers to inspect their tools.
+Stdio servers launch local subprocesses; remote servers make outbound network 
+requests.
+Review each server below and confirm whether Agent Scan may contact it.
+Tip: pass --dangerously-run-mcp-servers to skip these prompts, or set 
+--suppress-mcpserver-io=true to hide server stderr output.
+
+Stdio MCP servers (require consent):
+
+  [1] fake-notes-server
+      config : 
+/home/user/lost-in-transliteration/research/scratch/mcp_config.json
+      command: 
+/home/user/lost-in-transliteration/research/scratch/.venv-mcp/bin/python 
+/home/user/lost-in-transliteration/research/scratch/fake_server.py
+      Allow Agent Scan to start 'fake-notes-server'? [y/N]:       Declined: 'fake-notes-server' will not be started.
+
+Proceeding with 0 of 1 MCP servers. Skipped: 1.
+
+Note: declined servers will not be contacted by Agent Scan. Agent Scan may still
+show analysis results for them if Snyk recognizes the server from prior scans — 
+these results are not based on your own machine's behavior.
+
+exit=1
