@@ -159,23 +159,40 @@ classifiers:
   batch_size: 32
   device: auto                       # auto | cpu | cuda
   embedded_condition: false          # also score attacks embedded in their carrier
-  models:
+  models:                            # ids/labels verified 2026-11-04 (research/classifiers.md; id2label printed on load)
     - name: protectai-v2
-      hf_id: "TODO_VERIFY: protectai/deberta-v3-base-prompt-injection-v2"
-      positive_labels: [INJECTION]   # TODO_VERIFY against the model card / config.id2label
-      threshold: 0.5
+      hf_id: protectai/deberta-v3-base-prompt-injection-v2
+      positive_labels: [INJECTION]
+      threshold: 0.92                # LLM Guard default (score > 0.92); card documents none; AUC is threshold-free
       max_length: 512
       gated: false
     - name: prompt-guard-2
-      hf_id: "TODO_VERIFY: meta-llama/Llama-Prompt-Guard-2-86M (gated; owner accepts licence)"
-      positive_labels: [LABEL_1, MALICIOUS]   # TODO_VERIFY
+      hf_id: meta-llama/Llama-Prompt-Guard-2-86M
+      positive_labels: [LABEL_1]     # official config has no id2label; index 1 = malicious (card)
       threshold: 0.5
       max_length: 512
       gated: true
-    - name: third-classifier
-      enabled: false                 # pick a third verified open classifier, or leave disabled
-      hf_id: "TODO_VERIFY: another open prompt-injection/jailbreak classifier that runs on CPU"
-      positive_labels: [TODO_VERIFY]
+    - name: prompt-guard-2-22m
+      hf_id: meta-llama/Llama-Prompt-Guard-2-22M
+      positive_labels: [LABEL_1]
+      threshold: 0.5
+      max_length: 512
+      gated: true
+    - name: horizon-guard
+      hf_id: Horizon-Labs/prompt-injection-guard-base
+      positive_labels: [INJECTION]
+      threshold: 0.5
+      max_length: 512
+      gated: false
+    - name: wolf-defender
+      hf_id: patronus-studio/wolf-defender-prompt-injection
+      positive_labels: [injection]
+      threshold: 0.5
+      max_length: 512
+      gated: false
+    - name: proventra-mdeberta
+      hf_id: proventra/mdeberta-v3-base-prompt-injection
+      positive_labels: [INJECTION]
       threshold: 0.5
       max_length: 512
       gated: false

@@ -39,3 +39,40 @@ Stages append here automatically.
 - 2026-11-04T23:10:57+00:00 [native] native set: 102 items from 240 generated; dropped {'wrong_script': 36, 'label_disagree': 2}; shortfall {'attack/ur': 9, 'benign/ur': 9}
 - 2026-11-04T23:14:53+00:00 [native] native set: 114 items from 240 generated; dropped {'wrong_script': 24, 'label_disagree': 2}; shortfall {'attack/ur': 3, 'benign/ur': 3}
 - 2026-11-04 (owner-approved; config profile `cloud_openrouter`) Data stages ran in a cloud session on OpenRouter instead of the Spark: generator/translator/labeler `google/gemma-4-31b-it`, native writer `qwen/qwen3.5-27b` (both open-weight; rule 8 holds). Owner rated the 20-item Roman Urdu smoke test all OK. Native `ur` instruction made explicit (Qwen answered the Roman-Urdu-language prompt in Roman Urdu; 36/36 Urdu-script items dropped before the fix). Spend $0.18. Details: research/DATA_RUN.md.
+- 2026-11-05T06:24:33+00:00 [classifiers] loaded classifier protectai-v2 (protectai/deberta-v3-base-prompt-injection-v2) labels={0: 'SAFE', 1: 'INJECTION'}
+- 2026-11-05T06:24:49+00:00 [classifiers] loaded classifier prompt-guard-2 (meta-llama/Llama-Prompt-Guard-2-86M) labels={0: 'LABEL_0', 1: 'LABEL_1'}
+- 2026-11-05T06:24:57+00:00 [classifiers] loaded classifier prompt-guard-2-22m (meta-llama/Llama-Prompt-Guard-2-22M) labels={0: 'LABEL_0', 1: 'LABEL_1'}
+- 2026-11-05T06:25:19+00:00 [classifiers] loaded classifier horizon-guard (Horizon-Labs/prompt-injection-guard-base) labels={0: 'SAFE', 1: 'INJECTION'}
+- 2026-11-05T06:25:39+00:00 [classifiers] loaded classifier wolf-defender (patronus-studio/wolf-defender-prompt-injection) labels={0: 'benign', 1: 'injection'}
+- 2026-11-05T06:25:55+00:00 [classifiers] loaded classifier proventra-mdeberta (proventra/mdeberta-v3-base-prompt-injection) labels={0: 'SAFE', 1: 'INJECTION'}
+- 2026-11-05T06:29:10+00:00 [classifiers] protectai-v2: scored 2908 inputs -> protectai-v2.jsonl
+- 2026-11-05T06:32:42+00:00 [classifiers] prompt-guard-2: scored 2908 inputs -> prompt-guard-2.jsonl
+- 2026-11-05T06:33:35+00:00 [classifiers] prompt-guard-2-22m: scored 2908 inputs -> prompt-guard-2-22m.jsonl
+- 2026-11-05T06:36:36+00:00 [classifiers] horizon-guard: scored 2908 inputs -> horizon-guard.jsonl
+- 2026-11-05T06:39:37+00:00 [classifiers] wolf-defender: scored 2908 inputs -> wolf-defender.jsonl
+- 2026-11-05T06:43:02+00:00 [classifiers] proventra-mdeberta: scored 2908 inputs -> proventra-mdeberta.jsonl
+- 2026-11-05T06:43:03+00:00 [classifiers] horizon-guard en: TPR 0.983 FPR 0.007 AUC 0.999 (n=400/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] horizon-guard mixed: TPR 0.943 FPR 0.000 AUC 0.997 (n=400/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] horizon-guard roman_ur: TPR 0.902 FPR 0.000 AUC 0.997 (n=399/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] horizon-guard ur: TPR 0.942 FPR 0.010 AUC 0.997 (n=395/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] prompt-guard-2 en: TPR 0.485 FPR 0.000 AUC 0.995 (n=400/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] prompt-guard-2 mixed: TPR 0.275 FPR 0.000 AUC 0.983 (n=400/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] prompt-guard-2 roman_ur: TPR 0.115 FPR 0.000 AUC 0.980 (n=399/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] prompt-guard-2 ur: TPR 0.215 FPR 0.000 AUC 0.984 (n=395/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] prompt-guard-2-22m en: TPR 0.138 FPR 0.000 AUC 0.877 (n=400/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] prompt-guard-2-22m mixed: TPR 0.147 FPR 0.000 AUC 0.914 (n=400/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] prompt-guard-2-22m roman_ur: TPR 0.020 FPR 0.000 AUC 0.871 (n=399/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] prompt-guard-2-22m ur: TPR 0.000 FPR 0.000 AUC 0.478 (n=395/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] protectai-v2 en: TPR 0.932 FPR 0.020 AUC 0.994 (n=400/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] protectai-v2 mixed: TPR 0.965 FPR 0.130 AUC 0.966 (n=400/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] protectai-v2 roman_ur: TPR 0.910 FPR 0.133 AUC 0.940 (n=399/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] protectai-v2 ur: TPR 0.808 FPR 0.847 AUC 0.569 (n=395/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] proventra-mdeberta en: TPR 0.828 FPR 0.000 AUC 0.981 (n=400/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] proventra-mdeberta mixed: TPR 0.958 FPR 0.067 AUC 0.987 (n=400/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] proventra-mdeberta roman_ur: TPR 0.960 FPR 0.110 AUC 0.981 (n=399/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] proventra-mdeberta ur: TPR 0.954 FPR 0.057 AUC 0.991 (n=395/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] wolf-defender en: TPR 0.963 FPR 0.003 AUC 0.999 (n=400/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] wolf-defender mixed: TPR 0.830 FPR 0.003 AUC 0.996 (n=400/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] wolf-defender roman_ur: TPR 0.762 FPR 0.003 AUC 0.994 (n=399/300)
+- 2026-11-05T06:43:03+00:00 [classifiers] wolf-defender ur: TPR 0.919 FPR 0.017 AUC 0.993 (n=395/300)
+- 2026-11-05 Phase 1 §4.1 classifiers run on cloud CPU (4 threads, ~19 min): six verified classifiers (ids/labels in config.yaml, source research/classifiers.md). Results in results/classifiers*. Headline: Roman Urdu is the weakest variant for 4/6 (TPR roman_ur−en: PG2-86M −0.37 [−0.43,−0.31], wolf-defender −0.20 [−0.25,−0.16], PG2-22M −0.12, Horizon −0.08); native Roman Urdu attacks are caught even less (wolf 0.33, Horizon 0.67, PG2 0.00). ProtectAI over-blocks Urdu script (FPR 0.85).

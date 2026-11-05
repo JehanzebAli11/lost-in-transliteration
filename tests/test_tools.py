@@ -12,8 +12,9 @@ def test_todo_report_on_shipped_config(tmp_path):
     todos = cc.enabled_paths(cfg)
     joined = "\n".join(todos)
     for must in ("models.translator.model", "eval_models.models[claude-haiku].model",
-                 "eval_models.models[claude-haiku].input_usd_per_mtok", "classifiers.models[protectai-v2].hf_id"):
+                 "eval_models.models[claude-haiku].input_usd_per_mtok"):
         assert must in joined, must
+    assert "classifiers.models[protectai-v2].hf_id" not in joined  # verified 2026-11-04
     assert "third-classifier" not in joined and "openrouter-open" not in joined  # disabled entries
 
 
