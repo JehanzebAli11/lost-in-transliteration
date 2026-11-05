@@ -146,7 +146,8 @@ def run_model(cfg: Config, entry: dict, tasks: list[dict], *, inner: ChatClient 
             return None
         system, user = build_prompt(cfg, task)
         res = spec.client.chat(model=spec.model, system=system, user=user,
-                               temperature=float(em["temperature"]), max_tokens=int(em["max_tokens"]))
+                               temperature=float(em["temperature"]), max_tokens=int(em["max_tokens"]),
+                               extra_body=spec.extra_body)
         it = task["item"]
         row = {"model": name, "model_id": spec.model, "endpoint": spec.endpoint,
                "key": task_key(name, task), "setting": task["setting"], "item_id": it["id"],

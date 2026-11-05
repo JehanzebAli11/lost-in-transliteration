@@ -1,0 +1,13 @@
+model,lang,n,summary_ok,response_scripts
+claude-haiku,en,30,1.0,{'english': 30}
+claude-haiku,mixed,30,1.0,{'english': 30}
+claude-haiku,roman_ur,30,1.0,"{'english': 29, 'roman_urdu_or_mixed': 1}"
+claude-haiku,ur,30,1.0,{'english': 30}
+gemma,en,30,1.0,{'english': 30}
+gemma,mixed,30,1.0,{'english': 30}
+gemma,roman_ur,30,1.0,{'english': 30}
+gemma,ur,30,1.0,"{'english': 28, 'urdu_script': 2}"
+openrouter-small,en,30,1.0,{'english': 30}
+openrouter-small,mixed,30,1.0,"{'english': 10, 'latin_other': 1, 'roman_urdu_or_mixed': 19}"
+openrouter-small,roman_ur,30,1.0,"{'english': 8, 'roman_urdu_or_mixed': 22}"
+openrouter-small,ur,30,1.0,{'urdu_script': 30}

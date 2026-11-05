@@ -1,21 +1,33 @@
 {
-  "max_usd": 3.0,
+  "max_usd": 3.2,
   "stop_fraction": 0.95,
-  "total_usd": 0.17569686,
-  "calls": 2651,
+  "total_usd": 0.90723561,
+  "calls": 8213,
   "cached_calls": 124,
   "by_model": {
     "google/gemma-4-31b-it": {
-      "calls": 2584,
-      "input_tokens": 481956,
-      "output_tokens": 110832,
-      "usd": 0.140724
+      "calls": 4438,
+      "input_tokens": 925605,
+      "output_tokens": 229012,
+      "usd": 0.2767258
     },
     "qwen/qwen3.5-27b": {
       "calls": 67,
       "input_tokens": 21501,
       "output_tokens": 11301,
       "usd": 0.03497286
+    },
+    "anthropic/claude-haiku-5.5": {
+      "calls": 1854,
+      "input_tokens": 782267,
+      "output_tokens": 315078,
+      "usd": 0.2357657
+    },
+    "openai/gpt-5.4-nano": {
+      "calls": 1854,
+      "input_tokens": 441650,
+      "output_tokens": 217153,
+      "usd": 0.35977125
     }
   },
   "by_stage": {
@@ -30,7 +42,11 @@
     "native": {
       "calls": 385,
       "usd": 0.04183686
+    },
+    "eval_models": {
+      "calls": 5562,
+      "usd": 0.73153875
     }
   },
-  "updated": "2026-11-04T23:14:53+00:00"
+  "updated": "2026-11-05T08:49:20+00:00"
 }

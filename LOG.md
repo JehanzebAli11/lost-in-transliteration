@@ -76,3 +76,17 @@ Stages append here automatically.
 - 2026-11-05T06:43:03+00:00 [classifiers] wolf-defender roman_ur: TPR 0.762 FPR 0.003 AUC 0.994 (n=399/300)
 - 2026-11-05T06:43:03+00:00 [classifiers] wolf-defender ur: TPR 0.919 FPR 0.017 AUC 0.993 (n=395/300)
 - 2026-11-05 Phase 1 §4.1 classifiers run on cloud CPU (4 threads, ~19 min): six verified classifiers (ids/labels in config.yaml, source research/classifiers.md). Results in results/classifiers*. Headline: Roman Urdu is the weakest variant for 4/6 (TPR roman_ur−en: PG2-86M −0.37 [−0.43,−0.31], wolf-defender −0.20 [−0.25,−0.16], PG2-22M −0.12, Horizon −0.08); native Roman Urdu attacks are caught even less (wolf 0.33, Horizon 0.67, PG2 0.00). ProtectAI over-blocks Urdu script (FPR 0.85).
+- 2026-11-05T07:31:30+00:00 [eval_models] 20 tasks per model; budget spent so far $0.1757 of $3.20 (stop at 95%)
+- 2026-11-05T07:31:38+00:00 [eval_models] claude-haiku: {'model': 'claude-haiku', 'status': 'ok', 'new': 20, 'failed': 0, 'skipped_done': 0}
+- 2026-11-05T07:31:46+00:00 [eval_models] openrouter-small: {'model': 'openrouter-small', 'status': 'ok', 'new': 20, 'failed': 0, 'skipped_done': 0}
+- 2026-11-05T07:31:59+00:00 [eval_models] gemma: {'model': 'gemma', 'status': 'ok', 'new': 20, 'failed': 0, 'skipped_done': 0}
+- 2026-11-05T07:32:12+00:00 [eval_models] 927 tasks per model; budget spent so far $0.1844 of $3.20 (stop at 95%)
+- 2026-11-05T07:38:13+00:00 [eval_models] claude-haiku: {'model': 'claude-haiku', 'status': 'ok', 'new': 907, 'failed': 0, 'skipped_done': 20}
+- 2026-11-05T07:43:43+00:00 [eval_models] openrouter-small: {'model': 'openrouter-small', 'status': 'ok', 'new': 907, 'failed': 0, 'skipped_done': 20}
+- 2026-11-05T07:49:53+00:00 [eval_models] gemma: {'model': 'gemma', 'status': 'ok', 'new': 907, 'failed': 0, 'skipped_done': 20}
+- 2026-11-05T08:31:54+00:00 [eval_models] 927 tasks per model; budget spent so far $0.5527 of $3.20 (stop at 95%)
+- 2026-11-05T08:36:51+00:00 [eval_models] claude-haiku: {'model': 'claude-haiku', 'status': 'ok', 'new': 927, 'failed': 0, 'skipped_done': 0}
+- 2026-11-05T08:42:16+00:00 [eval_models] openrouter-small: {'model': 'openrouter-small', 'status': 'ok', 'new': 927, 'failed': 0, 'skipped_done': 0}
+- 2026-11-05T08:49:21+00:00 [eval_models] gemma: {'model': 'gemma', 'status': 'ok', 'new': 927, 'failed': 0, 'skipped_done': 0}
+- 2026-11-05 Bug fix: src/eval_models.py did not pass the model entry's extra_body, so "reasoning off" never reached the API; Claude Haiku 5.5 spent its 200-token cap on reasoning and returned empty text for 213/927 tasks (scored as "not followed"). Fixed, tests pass, all three models re-run; the first run is discarded.
+- 2026-11-05 RQ3 (profile cloud_openrouter; Haiku 5.5, GPT-5.4 nano, Gemma 4 31B via OpenRouter; 927 tasks/model; spend so far $0.91 incl. data). Follow rate, same-language: Haiku en 0.18, ur 0.29, roman_ur 0.24, mixed 0.25, native 0.37 (paired ur−en +0.11 [+0.03,+0.18]); GPT-5.4 nano en 0.16, roman_ur 0.08 (paired −0.08 [−0.14,−0.02]); Gemma flat ~0.22 (native 0.37). Clean controls: every model summarised 30/30 per language. Gemma also translated the data (caveat). Temperature 0 sent through OpenRouter for all three.
