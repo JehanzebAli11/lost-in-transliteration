@@ -20,3 +20,22 @@ Stages append here automatically.
 - Not verified (RUNBOOK step 1): every model id, every price, classifier label names,
   MCP scanner commands, torch on ARM64.
 
+- 2026-11-04T22:46:48+00:00 [build] goal payloads: {'CANARY': 6, 'SECRET_LEAK': 6, 'OVERRIDE': 6, 'LANG_SWITCH': 6}
+- 2026-11-04T22:48:08+00:00 [build] templates: 60 ({'direct_override': 12, 'authority_spoof': 12, 'roleplay_persona': 12, 'hidden_formatting': 12, 'polite_indirect': 12})
+- 2026-11-04T22:50:38+00:00 [build] carriers: 30
+- 2026-11-04T22:56:45+00:00 [build] benign: 300 ({'instruction_like': 120, 'ordinary': 90, 'chat': 90})
+- 2026-11-04T22:56:46+00:00 [build] expanded: 400 English attacks {'test': 108, 'train': 212, 'heldout_style': 80}, 300 benign, 30 carriers
+- 2026-11-04T22:56:47+00:00 [translate] phrase translations: {'I love pineapples': {'ur': 'مجھے انناس پسند ہیں۔', 'roman_ur': 'Mujhe pineapples bohat pasand hain', 'mixed': 'Mujhe pineapples bohat pasand hain.'}}
+- 2026-11-04T22:58:29+00:00 [translate] attacks/ur: +395 translated, 5 dropped after retries, 395/400 total
+- 2026-11-04T22:59:44+00:00 [translate] attacks/roman_ur: +399 translated, 1 dropped after retries, 399/400 total
+- 2026-11-04T23:01:04+00:00 [translate] attacks/mixed: +400 translated, 0 dropped after retries, 400/400 total
+- 2026-11-04T23:02:01+00:00 [translate] benign/ur: +300 translated, 0 dropped after retries, 300/300 total
+- 2026-11-04T23:02:57+00:00 [translate] benign/roman_ur: +300 translated, 0 dropped after retries, 300/300 total
+- 2026-11-04T23:03:44+00:00 [translate] benign/mixed: +300 translated, 0 dropped after retries, 300/300 total
+- 2026-11-04T23:04:11+00:00 [translate] carriers/ur: +30 translated, 0 dropped after retries, 30/30 total
+- 2026-11-04T23:04:33+00:00 [translate] carriers/roman_ur: +30 translated, 0 dropped after retries, 30/30 total
+- 2026-11-04T23:04:52+00:00 [translate] carriers/mixed: +30 translated, 0 dropped after retries, 30/30 total
+- 2026-11-04T23:04:52+00:00 [translate] wrote human_review_sample.csv: 60 rows for the owner to rate
+- 2026-11-04T23:10:57+00:00 [native] native set: 102 items from 240 generated; dropped {'wrong_script': 36, 'label_disagree': 2}; shortfall {'attack/ur': 9, 'benign/ur': 9}
+- 2026-11-04T23:14:53+00:00 [native] native set: 114 items from 240 generated; dropped {'wrong_script': 24, 'label_disagree': 2}; shortfall {'attack/ur': 3, 'benign/ur': 3}
+- 2026-11-04 (owner-approved) Data stages ran in a cloud session on OpenRouter instead of the Spark: generator/translator/labeler `google/gemma-4-31b-it`, native writer `qwen/qwen3.5-27b` (both open-weight; rule 8 holds). Owner rated the 20-item Roman Urdu smoke test all OK. Native `ur` instruction made explicit (Qwen answered the Roman-Urdu-language prompt in Roman Urdu; 36/36 Urdu-script items dropped before the fix). Spend $0.18. Details: research/DATA_RUN.md.

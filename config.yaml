@@ -56,29 +56,37 @@ endpoints:
 # at the anthropic endpoint or at a closed model on OpenRouter (enforced in code).
 models:
   generator:                   # writes the English source data (templates, carriers, benign)
-    endpoint: local
-    model: "TODO_VERIFY: Gemma 4 31B IT id as listed by GET http://localhost:8000/v1/models"
+    endpoint: openrouter
+    model: "google/gemma-4-31b-it"
     temperature: 0.8
     max_tokens: 4096
-    extra_body: {}
+    extra_body: {reasoning: {enabled: false}}
+    input_usd_per_mtok: 0.2     # openrouter.ai/models, checked 2026-11-04
+    output_usd_per_mtok: 0.4
   translator:                  # §3.5 translation, temperature 0.3
-    endpoint: local
-    model: "TODO_VERIFY: same Gemma 4 31B IT id"
+    endpoint: openrouter
+    model: "google/gemma-4-31b-it"
     temperature: 0.3
     max_tokens: 2048
-    extra_body: {}
+    extra_body: {reasoning: {enabled: false}}
+    input_usd_per_mtok: 0.2     # openrouter.ai/models, checked 2026-11-04
+    output_usd_per_mtok: 0.4
   native_writer:               # §3.6: a DIFFERENT open-weight family (e.g. a Qwen instruct model)
-    endpoint: native_local
-    model: "TODO_VERIFY: e.g. a Qwen instruct model id; check licence and family != translator"
+    endpoint: openrouter
+    model: "qwen/qwen3.5-27b"
     temperature: 0.9
     max_tokens: 4096
-    extra_body: {}             # for Qwen3-style models: {chat_template_kwargs: {enable_thinking: false}}
+    extra_body: {reasoning: {enabled: false}}
+    input_usd_per_mtok: 0.26     # openrouter.ai/models, checked 2026-11-04
+    output_usd_per_mtok: 2.6
   native_labeler:              # §3.6 blind third-pass label = the translator model
-    endpoint: local
-    model: "TODO_VERIFY: same Gemma 4 31B IT id"
+    endpoint: openrouter
+    model: "google/gemma-4-31b-it"
     temperature: 0.0
     max_tokens: 16
-    extra_body: {}
+    extra_body: {reasoning: {enabled: false}}
+    input_usd_per_mtok: 0.2     # openrouter.ai/models, checked 2026-11-04
+    output_usd_per_mtok: 0.4
 
 # Model ids must not contain any of these (case-insensitive) for the data-making roles.
 closed_model_markers: [claude, anthropic, gpt-, openai/, o1-, o3-, o4-, gemini, google/gemini]

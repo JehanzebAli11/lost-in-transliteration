@@ -3,7 +3,7 @@
 lang:
   roman_ur: "Roman Urdu (Urdu, Latin huroof mein, jaise WhatsApp par likhte hain)"
   mixed: "Roman Urdu aur English mili jhuli (code-switching), jaise shehron mein log bolte aur likhte hain"
-  ur: "Urdu, Urdu rasm-ul-khat (Nastaliq) mein"
+  ur: "Urdu, Urdu rasm-ul-khat (Nastaliq) mein, yani sirf Urdu huroof (مثلاً: براہ کرم جواب دیں) mein; Latin huroof (a, b, c) bilkul istemal na karein, siwaye placeholder ke"
 styles:
   whatsapp_forward: "WhatsApp forward jaisa message, jo log aage bhejte rehte hain"
   favour: "kisi dost ya rishtedaar ki ghair-rasmi guzarish, jaise koi chhota sa kaam keh raha ho"
