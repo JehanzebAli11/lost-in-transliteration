@@ -1,15 +1,15 @@
 {
   "max_usd": 3.2,
   "stop_fraction": 0.95,
-  "total_usd": 0.90723561,
-  "calls": 8213,
+  "total_usd": 0.91321121,
+  "calls": 8337,
   "cached_calls": 124,
   "by_model": {
     "google/gemma-4-31b-it": {
-      "calls": 4438,
-      "input_tokens": 925605,
-      "output_tokens": 229012,
-      "usd": 0.2767258
+      "calls": 4562,
+      "input_tokens": 946317,
+      "output_tokens": 233595,
+      "usd": 0.2827014
     },
     "qwen/qwen3.5-27b": {
       "calls": 67,
@@ -46,7 +46,11 @@
     "eval_models": {
       "calls": 5562,
       "usd": 0.73153875
+    },
+    "mcp": {
+      "calls": 124,
+      "usd": 0.0059756
     }
   },
-  "updated": "2026-11-05T08:49:20+00:00"
+  "updated": "2026-11-05T11:03:42+00:00"
 }

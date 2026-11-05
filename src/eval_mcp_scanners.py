@@ -125,12 +125,16 @@ class ClassifierScanner:
         self.scans_outputs = True
 
     def __call__(self, spec: dict, spec_path: Path):
-        texts = [t["description"] for t in spec["tools"]]
-        if spec["kind"] == "poisoned_output":
-            texts += [t["output"] for t in spec["tools"]]
-        scores = self.clf.score(texts)
-        best = max(scores) if scores else 0.0
-        return best >= self.clf.threshold, best, f"max score {best:.3f}"
+        # Score everything a client would see (descriptions and outputs) on every variant, clean
+        # included, so the false-positive rate is measured under the same conditions as detection.
+        # Scoring outputs only on poisoned_output variants (the old behaviour) made the comparison unfair.
+        descs = [t["description"] for t in spec["tools"]]
+        outs = [t["output"] for t in spec["tools"]]
+        scores = self.clf.score(descs + outs)
+        d_best = max(scores[:len(descs)], default=0.0)
+        o_best = max(scores[len(descs):], default=0.0)
+        best = max(d_best, o_best)
+        return best >= self.clf.threshold, best, f"max score {best:.3f} (desc {d_best:.3f}, out {o_best:.3f})"
 
 
 def build_scanners(cfg: Config, *, classifiers: dict | None = None, extra: dict | None = None,

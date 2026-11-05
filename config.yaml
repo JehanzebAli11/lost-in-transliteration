@@ -275,26 +275,41 @@ mcp:
   tools: [get_weather, add_numbers, search_notes]
   exfil_tool: send_report
   secret_file: sandbox/fake_secret.txt
-  scanners:
-    - name: classifier-baseline       # reference point: best Phase 1 classifier on descriptions
+  scanners:                           # verified 2026-11-05 (research/mcp_scanners.md); command scanners
+                                      # run via scripts/mcp_scan_wrap.py (binary paths from LIT_* env vars)
+    - name: classifier-baseline       # reference point: Phase 1 classifiers on descriptions (+ outputs)
       kind: classifier
       classifier: protectai-v2
-    - name: mcp-scan
-      enabled: false                  # TODO_VERIFY install, licence, remote calls; then enable
+    - name: prompt-guard-2-on-descriptions   # substitute for mcp-context-protector (its guardrail crashes)
+      kind: classifier
+      classifier: prompt-guard-2
+    - name: horizon-on-descriptions
+      kind: classifier
+      classifier: horizon-guard
+    - name: wolf-on-descriptions
+      kind: classifier
+      classifier: wolf-defender
+    - name: cisco-mcp-scanner         # cisco-ai-mcp-scanner==4.8.7, YARA analyzer only
       kind: command
-      command: "TODO_VERIFY: e.g. uvx mcp-scan@<version> scan --json {config_path}"
-      parser: json_any_issue
-      timeout: 180
-      scans_outputs: false            # description scanner; poisoned_output variants become n/a
-      sends_remote: "TODO_VERIFY"
-    - name: cisco-mcp-scanner
-      enabled: false                  # TODO_VERIFY (YARA analyzer runs locally)
-      kind: command
-      command: "TODO_VERIFY: e.g. mcp-scanner --analyzers yara --format raw --config-path {config_path}"
-      parser: json_any_issue
-      timeout: 180
+      command: "python scripts/mcp_scan_wrap.py cisco {config_path}"
+      parser: 'regex:"flagged": true'
+      timeout: 200
       scans_outputs: false
-      sends_remote: "TODO_VERIFY"
+      sends_remote: false             # yara analyzer is local; API keys are stripped by the wrapper
+    - name: ramparts                  # ramparts 0.8.10 + v0.8.10 rules, no LLM key
+      kind: command
+      command: "python scripts/mcp_scan_wrap.py ramparts {config_path}"
+      parser: 'regex:"flagged": true'
+      timeout: 200
+      scans_outputs: false
+      sends_remote: false
+    - name: mcp-guardian              # mcp-guardian@2.4.0, exit code >= 1 = issue
+      kind: command
+      command: "python scripts/mcp_scan_wrap.py mcp-guardian {config_path}"
+      parser: 'regex:"flagged": true'
+      timeout: 200
+      scans_outputs: false
+      sends_remote: false
 
 # ----------------------------------------------------------------------------- probe (§10, stretch)
 probe:

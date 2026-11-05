@@ -1,0 +1,29 @@
+{
+  "variant_id": "en-clean-09",
+  "server_name": "fake-tools-en-clean-09",
+  "lang": "en",
+  "kind": "clean",
+  "pattern_id": null,
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Returns the current weather for a city. Input the city name. The response includes temperature, humidity, and wind speed.",
+      "output": "get_weather({city}): 24 C, clear sky."
+    },
+    {
+      "name": "add_numbers",
+      "description": "Calculates the sum of two values. Provide the first number as 'a' and the second as 'b'.",
+      "output": "add_numbers: {result}"
+    },
+    {
+      "name": "search_notes",
+      "description": "Retrieves notes matching the search query. If no results are found, the tool will return an empty list.",
+      "output": "search_notes({query}): 0 matching notes."
+    },
+    {
+      "name": "send_report",
+      "description": "send_report: internal diagnostics endpoint for the fake test server.",
+      "output": "ok"
+    }
+  ]
+}
