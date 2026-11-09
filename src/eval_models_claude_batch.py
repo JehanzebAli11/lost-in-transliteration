@@ -26,6 +26,14 @@ be scored "not followed"); it is counted in the LOG, and ``--round 2`` with a la
 ``--opus-max-tokens`` reruns just the missing tasks. The full run refuses to start for a model
 whose latest sanity round had any.
 
+Rounds and superseding: a task is (re)submitted when this model has no row for it, or its row was
+made with a different ``max_tokens`` (``--sonnet-max-tokens`` / ``--opus-max-tokens``). E.g.
+``--only claude-sonnet --mode sanity --round 2 --sonnet-max-tokens 400`` reruns the 20 sanity
+tasks at 400. When the new rows arrive, the old rows move from models_raw.jsonl to
+``results/rq3_claude_superseded.jsonl`` with a ``reason``, so models_raw.jsonl keeps one row per key
+and nothing is lost; usage.csv and spend.json keep the cost of both rounds. Collect stats (and the
+LOG line) include ``at_max_tokens_share``: the share of replies that stopped at max_tokens.
+
 Budgets, both checked before any submit:
 * jzapi: ``lit_rq3`` cap in JzLab/budgets.yaml ($20), from results/usage.csv plus every
   unlogged batch's worst case (jzapi's own guard, inside ``batch_submit``);
@@ -48,6 +56,7 @@ Usage (on the Mac, with jzapi installed in the venv and the key in ~/lab/JzLab/.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import hashlib
 import statistics
 from collections import Counter
@@ -55,7 +64,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .budget import Budget, BudgetExceeded, estimate_tokens
-from .common import Config, JsonlAppender, load_config, log_event, now_iso, read_json, read_jsonl, write_json
+from .common import (Config, JsonlAppender, load_config, log_event, now_iso, read_json, read_jsonl, write_json,
+                     write_jsonl)
 from .eval_models import build_prompt, build_tasks, task_key, write_summaries
 from .judge import judge, summary_ok
 
@@ -65,9 +75,11 @@ ENDPOINT = "anthropic_batch"     # the "endpoint" value in models_raw.jsonl rows
 SANITY_N = 20                    # same as `make eval-models-sanity` (eval_models --limit 20)
 CACHE_MIN_TOKENS = 512           # below this the API does not cache a prefix on these models
 LEDGER = "rq3_claude_batches.json"
+SUPERSEDED = "rq3_claude_superseded.jsonl"   # rows replaced by a later round, kept with a reason
 TEMPERATURE_APPLIED = "api_default"
 OPUS_MAX_TOKENS = 1024
 OPUS_EFFORT = "low"
+MAX_TOKENS_FLAG = {"claude-sonnet": "--sonnet-max-tokens", "claude-opus": "--opus-max-tokens"}
 
 
 class LitBudgetExceeded(BudgetExceeded):
@@ -92,8 +104,9 @@ class ModelSpec:
 
 
 def model_specs(cfg: Config, *, opus_max_tokens: int = OPUS_MAX_TOKENS, opus_effort: str = OPUS_EFFORT,
-                only: list[str] | None = None) -> list[ModelSpec]:
-    mt = int(cfg["eval_models"]["max_tokens"])
+                sonnet_max_tokens: int | None = None, only: list[str] | None = None) -> list[ModelSpec]:
+    """sonnet_max_tokens None = eval_models.max_tokens (200), the other models' cap."""
+    mt = int(sonnet_max_tokens) if sonnet_max_tokens is not None else int(cfg["eval_models"]["max_tokens"])
     specs = [
         ModelSpec("claude-sonnet", "sonnet", mt, {"thinking": {"type": "between_tools"}}),
         ModelSpec("claude-opus", "opus", int(opus_max_tokens), {"output_config": {"effort": opus_effort}}),
@@ -140,6 +153,47 @@ def offline_worst_case(reqs: list[dict]) -> float:
     return sum(models.worst_case_usd(r["params"]["model"], prompt_tokens=api.bytes_upper_bound(r["params"]),
                                      max_tokens=int(r["params"]["max_tokens"]),
                                      cache_ttl=api.cache_ttl_of(r["params"]), batch=True) for r in reqs)
+
+
+def model_rows(cfg: Config, model_name: str) -> dict[str, dict]:
+    """This model's rows in models_raw.jsonl by key."""
+    return {r["key"]: r for r in read_jsonl(cfg.results_dir / "models_raw.jsonl") if r.get("model") == model_name}
+
+
+def needs_run(rows: dict[str, dict], spec: ModelSpec, task: dict) -> bool:
+    """No row yet, or a row made with a different max_tokens (a later round supersedes it)."""
+    r = rows.get(task_key(spec.name, task))
+    return r is None or int(r.get("max_tokens") or 0) != spec.max_tokens
+
+
+def todo_tasks(cfg: Config, spec: ModelSpec, tasks: list[dict]) -> list[dict]:
+    rows = model_rows(cfg, spec.name)
+    return [t for t in tasks if needs_run(rows, spec, t)]
+
+
+def supersede_and_append(cfg: Config, new_rows: list[dict], old_by_key: dict[str, dict], batch: str) -> int:
+    """Append new_rows to models_raw.jsonl; rows in old_by_key (same keys) move to the superseded
+    file with a reason first. Safe to repeat after a crash: nothing is moved or written twice."""
+    raw_path = cfg.results_dir / "models_raw.jsonl"
+    if not old_by_key:
+        out = JsonlAppender(raw_path)
+        for r in new_rows:
+            out.append(r)
+        return 0
+    sup_path = cfg.results_dir / SUPERSEDED
+    already = {(r["key"], r.get("superseded_by_batch")) for r in read_jsonl(sup_path)}
+    sup = JsonlAppender(sup_path)
+    new_mt = {r["key"]: r["max_tokens"] for r in new_rows}
+    for k, old in old_by_key.items():
+        if (k, batch) not in already:
+            sup.append({**old, "reason": f"superseded by batch {batch}: rerun at max_tokens {new_mt.get(k)} "
+                                         f"(this row: max_tokens {old.get('max_tokens')})",
+                        "superseded_by_batch": batch, "superseded_at": now_iso()})
+    drop = set(old_by_key)
+    model = {r["model"] for r in new_rows}
+    kept = [r for r in read_jsonl(raw_path) if not (r["key"] in drop and r.get("model") in model)]
+    write_jsonl(raw_path, kept + new_rows)      # atomic (tmp file + replace)
+    return len(old_by_key)
 
 
 # ----------------------------------------------------------------------------- LIT-side ledger
@@ -241,16 +295,17 @@ def collect(cfg: Config, session, spec: ModelSpec, name: str, all_tasks: list[di
     """Results of an ended batch -> rows (missing keys only), LIT spend (once), stats in the ledger."""
     items = session.batch_results(name)          # jzapi logs usage.csv once per batch
     by_cid = {custom_id(task_key(spec.name, t)): t for t in all_tasks}
-    raw_path = cfg.results_dir / "models_raw.jsonl"
-    done = {r["key"] for r in read_jsonl(raw_path)}
-    out = JsonlAppender(raw_path)
+    rows = model_rows(cfg, spec.name)
     phrases = read_json(cfg.data_dir / "phrase_translations.json", default={}) or {}
     types = Counter(it.type for it in items)
     stops = Counter(it.stop_reason for it in items if it.type == "succeeded")
     empty_at_max = sum(1 for it in items if it.type == "succeeded" and not (it.text or "").strip()
                        and it.stop_reason == "max_tokens")
     out_toks = [int(it.usage.get("output_tokens", 0)) for it in items if it.type == "succeeded"]
-    new = unknown = 0
+    n_ok = sum(1 for it in items if it.type == "succeeded")
+    new_rows: list[dict] = []
+    replaced: dict[str, dict] = {}
+    unknown = 0
     for it in items:
         if it.type != "succeeded":
             continue
@@ -258,13 +313,16 @@ def collect(cfg: Config, session, spec: ModelSpec, name: str, all_tasks: list[di
         if task is None:
             unknown += 1
             continue
-        if task_key(spec.name, task) in done:
-            continue
+        key = task_key(spec.name, task)
+        if not needs_run(rows, spec, task) or any(r["key"] == key for r in new_rows):
+            continue                  # already collected at this max_tokens
         if not (it.text or "").strip() and it.stop_reason == "max_tokens":
             continue  # cut off while thinking: not an observation; a later --round fills it
-        out.append(make_row(cfg, spec, task, it.text, it.usage, it.model_id or spec.model_id, phrases))
-        done.add(task_key(spec.name, task))
-        new += 1
+        new_rows.append(make_row(cfg, spec, task, it.text, it.usage, it.model_id or spec.model_id, phrases))
+        if key in rows:
+            replaced[key] = rows[key]
+    superseded = supersede_and_append(cfg, new_rows, replaced, name)
+    new = len(new_rows)
     ledger = read_ledger(cfg)
     entry = ledger.setdefault(name, {"model": spec.name})
     if not entry.get("lit_spend_recorded"):
@@ -276,7 +334,9 @@ def collect(cfg: Config, session, spec: ModelSpec, name: str, all_tasks: list[di
         _record_lit_spend(Budget.from_config(cfg), spec.model_id, len(billed), tin, tout, usd)
         entry.update(lit_spend_recorded=True, lit_spend_usd=round(usd, 6))
     stats = {"model": spec.name, "batch": name, "results": dict(types), "stop_reasons": dict(stops),
-             "empty_at_max_tokens": empty_at_max, "new_rows": new, "unmatched": unknown,
+             "at_max_tokens_share": round(stops.get("max_tokens", 0) / n_ok, 4) if n_ok else None,
+             "empty_at_max_tokens": empty_at_max, "new_rows": new, "superseded_rows": superseded,
+             "unmatched": unknown,
              "output_tokens_median": statistics.median(out_toks) if out_toks else None,
              "output_tokens_max": max(out_toks) if out_toks else None, "max_tokens": spec.max_tokens}
     entry.update(stats=stats, collected=now_iso())
@@ -305,10 +365,10 @@ def _sanity_gate(cfg: Config, spec: ModelSpec) -> None:
     if stats.get("empty_at_max_tokens"):
         raise SanityGateError(f"{spec.name}: {stats['empty_at_max_tokens']} sanity replies were empty at "
                               f"max_tokens={stats.get('max_tokens')} (no rows written for them); rerun the "
-                              f"sanity batch with a larger --opus-max-tokens and --round 2 first")
+                              f"sanity batch with a larger {MAX_TOKENS_FLAG[spec.name]} and --round 2 first")
     if spec.max_tokens < int(stats.get("max_tokens") or 0):
         raise SanityGateError(f"{spec.name}: full run max_tokens {spec.max_tokens} is below the sanity "
-                              f"round's {stats.get('max_tokens')}; pass the same --opus-max-tokens")
+                              f"round's {stats.get('max_tokens')}; pass {MAX_TOKENS_FLAG[spec.name]} {stats.get('max_tokens')}")
 
 
 def estimate(cfg: Config, specs: list[ModelSpec], *, session=None) -> dict:
@@ -316,12 +376,11 @@ def estimate(cfg: Config, specs: list[ModelSpec], *, session=None) -> dict:
     session = session or _session(cfg, None, "bytes")
     budget = Budget.from_config(cfg)
     all_tasks = select_tasks(cfg, "full")
-    done = {r["key"] for r in read_jsonl(cfg.results_dir / "models_raw.jsonl")}
     out = {"sanity": {}, "full": {}, "full_remaining": {}}
     for spec in specs:
         out["sanity"][spec.name] = offline_worst_case(build_requests(cfg, spec, all_tasks[:SANITY_N]))
         out["full"][spec.name] = offline_worst_case(build_requests(cfg, spec, all_tasks))
-        todo = [t for t in all_tasks if task_key(spec.name, t) not in done]
+        todo = todo_tasks(cfg, spec, all_tasks)
         out["full_remaining"][spec.name] = offline_worst_case(build_requests(cfg, spec, todo)) if todo else 0.0
     n_full = len(all_tasks)
     jz = session.budget
@@ -346,8 +405,10 @@ def estimate(cfg: Config, specs: list[ModelSpec], *, session=None) -> dict:
 
 def run(cfg: Config, mode: str, *, client=None, only: list[str] | None = None, token_estimate: str = "bytes",
         wait: bool = True, interval: float = 60.0, round_: int = 1, sanity_gate: bool = True,
-        opus_max_tokens: int = OPUS_MAX_TOKENS, opus_effort: str = OPUS_EFFORT, sleep=None) -> list[dict]:
-    specs = model_specs(cfg, opus_max_tokens=opus_max_tokens, opus_effort=opus_effort, only=only)
+        opus_max_tokens: int = OPUS_MAX_TOKENS, opus_effort: str = OPUS_EFFORT,
+        sonnet_max_tokens: int | None = None, sleep=None) -> list[dict]:
+    specs = model_specs(cfg, opus_max_tokens=opus_max_tokens, opus_effort=opus_effort,
+                        sonnet_max_tokens=sonnet_max_tokens, only=only)
     session = _session(cfg, client, token_estimate)
     if mode == "estimate":
         return [estimate(cfg, specs, session=session)]
@@ -356,18 +417,25 @@ def run(cfg: Config, mode: str, *, client=None, only: list[str] | None = None, t
     all_tasks = select_tasks(cfg, "full")
     tasks = select_tasks(cfg, mode)
     budget = Budget.from_config(cfg)
-    done = {r["key"] for r in read_jsonl(cfg.results_dir / "models_raw.jsonl")}
     pending = []
     for spec in specs:
         name = batch_name(spec.name, mode, round_)
         if _state(session, name) is not None:      # never resubmit: poll and collect it
+            sent = read_ledger(cfg).get(name) or {}
+            if sent.get("max_tokens") is not None:  # rows record what the batch was sent with
+                if int(sent["max_tokens"]) != spec.max_tokens:
+                    print(f"{spec.name}: batch {name} was sent with max_tokens {sent['max_tokens']}; "
+                          f"collecting it as such (ignoring {spec.max_tokens})")
+                spec = dataclasses.replace(spec, max_tokens=int(sent["max_tokens"]),
+                                           extra=sent.get("extra", spec.extra))
             pending.append((spec, name))
             continue
         if mode == "full" and sanity_gate:
             _sanity_gate(cfg, spec)
-        todo = [t for t in tasks if task_key(spec.name, t) not in done]
+        todo = todo_tasks(cfg, spec, tasks)
         if not todo:
-            log_event(cfg, f"{spec.name}: all {len(tasks)} {mode} tasks already in models_raw.jsonl",
+            log_event(cfg, f"{spec.name}: all {len(tasks)} {mode} tasks already in models_raw.jsonl at "
+                           f"max_tokens {spec.max_tokens}",
                       stage="eval_models_claude_batch")
             continue
         reqs = build_requests(cfg, spec, todo)
@@ -416,7 +484,10 @@ def main(argv=None):
     ap.add_argument("--no-wait", action="store_true", help="submit and return; rerun to poll and collect")
     ap.add_argument("--poll-interval", type=float, default=60.0)
     ap.add_argument("--round", type=int, default=1, dest="round_",
-                    help="a new batch for tasks still missing (errored/expired results)")
+                    help="a new batch for tasks still missing or made at another max_tokens (their old "
+                         "rows move to results/rq3_claude_superseded.jsonl)")
+    ap.add_argument("--sonnet-max-tokens", type=int, default=None,
+                    help="default: eval_models.max_tokens (200), as for the other models")
     ap.add_argument("--opus-max-tokens", type=int, default=OPUS_MAX_TOKENS)
     ap.add_argument("--opus-effort", default=OPUS_EFFORT, choices=["low", "medium", "high", "xhigh", "max"])
     ap.add_argument("--no-sanity-gate", action="store_true")
@@ -424,7 +495,8 @@ def main(argv=None):
     cfg = load_config(a.config, a.profile)
     stats = run(cfg, a.mode, only=a.only, token_estimate=a.token_estimate, wait=not a.no_wait,
                 interval=a.poll_interval, round_=a.round_, sanity_gate=not a.no_sanity_gate,
-                opus_max_tokens=a.opus_max_tokens, opus_effort=a.opus_effort)
+                opus_max_tokens=a.opus_max_tokens, opus_effort=a.opus_effort,
+                sonnet_max_tokens=a.sonnet_max_tokens)
     if a.mode != "estimate":
         for s in stats:
             print(s)

@@ -22,11 +22,12 @@ FAKE_KEY = "sk-ant-test-FAKEKEY-lit-0123456789abcdef-never-real"
 class FakeBatchClient:
     """messages.batches.{create,retrieve,results}; answers with FakeLLM so the judge has work to do."""
 
-    def __init__(self, *, empty_cids=(), statuses=None):
+    def __init__(self, *, empty_cids=(), statuses=None, max_cids=()):
         self.calls = []
         self.batches = {}
         self.statuses = list(statuses or [])
         self.empty_cids = set(empty_cids)
+        self.max_cids = set(max_cids)       # non-empty replies cut off at max_tokens
         self.llm = FakeLLM(obey_rate=0.5)
         self.messages = NS(batches=NS(create=self._create, retrieve=self._retrieve, results=self._results),
                            count_tokens=self._count)
@@ -63,6 +64,8 @@ class FakeBatchClient:
                 text = self.llm.chat(model=p["model"], system=system, user=user, temperature=None,
                                      max_tokens=p["max_tokens"]).text
                 stop, otok = "end_turn", 40
+                if r["custom_id"] in self.max_cids:
+                    stop, otok = "max_tokens", p["max_tokens"]
             msg = NS(id="msg_fake", model=p["model"], stop_reason=stop, content=[NS(type="text", text=text)],
                      usage=NS(input_tokens=500, output_tokens=otok, cache_creation_input_tokens=0,
                               cache_read_input_tokens=0, cache_creation=None))
@@ -229,7 +232,10 @@ def test_empty_at_max_tokens_is_not_a_row_and_blocks_full(jz):
         run(cfg, "full", fake, only=["claude-opus"])
     fake.empty_cids = set()
     run(cfg, "sanity", fake, only=["claude-opus"], round_=2, opus_max_tokens=2048)
-    assert len(fake.batches["msgbatch_fake3"]) == 1 and len(raw(cfg, "claude-opus")) == 20
+    # round 2 at another max_tokens reruns all 20: the missing one and the 19 made at 1024
+    assert len(fake.batches["msgbatch_fake3"]) == 20 and len(raw(cfg, "claude-opus")) == 20
+    assert {r["max_tokens"] for r in raw(cfg, "claude-opus")} == {2048}
+    assert len(read_jsonl(cfg.results_dir / "rq3_claude_superseded.jsonl")) == 19
     with pytest.raises(cb.SanityGateError, match="below"):
         run(cfg, "full", fake, only=["claude-opus"])     # default 1024 < the 2048 the sanity round used
     run(cfg, "full", fake, only=["claude-opus"], opus_max_tokens=2048)
@@ -319,3 +325,110 @@ def test_claude_rows_never_feed_training():
     src = Path(cb.__file__).parent
     for f in ("train_detector.py", "build_dataset.py", "translate.py", "build_native.py", "probe.py"):
         assert "models_raw" not in (src / f).read_text(encoding="utf-8")
+
+
+# ----------------------------------------------------------------------------- --sonnet-max-tokens, rounds
+def sonnet_ids(cfg, n=20):
+    return [cb.custom_id(em.task_key("claude-sonnet", t)) for t in em.build_tasks(cfg)[:n]]
+
+
+def test_sonnet_max_tokens_flag(jz, monkeypatch):
+    cfg = jz
+    son = cb.model_specs(cfg)[0]
+    assert son.max_tokens == 200
+    son4 = cb.model_specs(cfg, sonnet_max_tokens=400, only=["claude-sonnet"])[0]
+    assert son4.max_tokens == 400 and son4.extra == {"thinking": {"type": "between_tools"}}
+    assert {r["params"]["max_tokens"] for r in cb.build_requests(cfg, son4, em.build_tasks(cfg)[:3])} == {400}
+    assert cb.model_specs(cfg, sonnet_max_tokens=400)[1].max_tokens == 1024     # Opus unaffected
+    seen = {}
+    monkeypatch.setattr(cb, "load_config", lambda *a, **k: cfg)
+    monkeypatch.setattr(cb, "run", lambda c, mode, **kw: seen.update(kw, mode=mode) or [])
+    cb.main(["--mode", "sanity", "--only", "claude-sonnet", "--round", "2", "--sonnet-max-tokens", "400"])
+    assert seen["sonnet_max_tokens"] == 400 and seen["round_"] == 2 and seen["only"] == ["claude-sonnet"]
+    cb.main(["--mode", "full"])
+    assert seen["sonnet_max_tokens"] is None and seen["opus_max_tokens"] == 1024
+
+
+def test_estimate_uses_sonnet_max_tokens(jz):
+    cfg = jz
+    a = cb.run(cfg, "estimate")[0]
+    b = cb.run(cfg, "estimate", sonnet_max_tokens=400)[0]
+    n = len(em.build_tasks(cfg))
+    assert b["full"]["claude-sonnet"] - a["full"]["claude-sonnet"] == pytest.approx(n * 200 * 10.0 / 1e6 * 0.5)
+    assert b["full"]["claude-opus"] == a["full"]["claude-opus"]
+
+
+def test_sonnet_round2_supersedes_round1_rows(jz):
+    cfg = jz
+    n = len(em.build_tasks(cfg))
+    fake = FakeBatchClient(max_cids=set(sonnet_ids(cfg)[:17]))
+    st = {s["model"]: s for s in run(cfg, "sanity", fake)}
+    assert st["claude-sonnet"]["at_max_tokens_share"] == 0.85 and st["claude-opus"]["at_max_tokens_share"] == 0
+    assert "'at_max_tokens_share': 0.85" in cfg.log_file.read_text()
+    opus_before = raw(cfg, "claude-opus")
+    r1 = {r["key"]: r for r in raw(cfg, "claude-sonnet")}
+    usage_n = len(list(csv.DictReader(open(cfg.root / "results" / "usage.csv"))))
+    fake.max_cids = set()
+    st2 = run(cfg, "sanity", fake, only=["claude-sonnet"], round_=2, sonnet_max_tokens=400)[0]
+    assert st2["batch"] == "rq3_claude-sonnet_sanity_r2" and st2["superseded_rows"] == 20
+    assert st2["new_rows"] == 20 and st2["at_max_tokens_share"] == 0
+    assert [r["params"]["max_tokens"] for r in fake.batches["msgbatch_fake3"]] == [400] * 20
+    rows = raw(cfg, "claude-sonnet")
+    assert len(rows) == 20 and len({r["key"] for r in rows}) == 20 and {r["max_tokens"] for r in rows} == {400}
+    assert raw(cfg, "claude-opus") == opus_before
+    sup = read_jsonl(cfg.results_dir / "rq3_claude_superseded.jsonl")
+    assert {r["key"] for r in sup} == set(r1) and all(r["max_tokens"] == 200 for r in sup)
+    assert all("max_tokens 400" in r["reason"] and r["superseded_by_batch"] == "rq3_claude-sonnet_sanity_r2"
+               for r in sup)
+    assert {k: {f: v for f, v in r.items() if f not in ("reason", "superseded_by_batch", "superseded_at")}
+            for k, r in ((r["key"], r) for r in sup)} == r1          # nothing lost
+    # usage and spend keep both rounds
+    assert len(list(csv.DictReader(open(cfg.root / "results" / "usage.csv")))) == usage_n + 20
+    assert read_json(cfg.results_dir / "spend.json")["by_model"]["claude-sonnet-5-5"]["calls"] == 40
+    # rerunning the same command changes nothing
+    files = {p: p.read_bytes() for p in (cfg.results_dir / "models_raw.jsonl",
+                                         cfg.results_dir / "rq3_claude_superseded.jsonl",
+                                         cfg.results_dir / "spend.json", cfg.root / "results" / "usage.csv")}
+    run(cfg, "sanity", fake, only=["claude-sonnet"], round_=2, sonnet_max_tokens=400)
+    assert fake.n("batch_create") == 3 and all(p.read_bytes() == b for p, b in files.items())
+    # the full run must use 400 for Sonnet, and then fills the rest at 400
+    with pytest.raises(cb.SanityGateError, match="--sonnet-max-tokens 400"):
+        run(cfg, "full", fake)
+    assert fake.n("batch_create") == 3
+    run(cfg, "full", fake, sonnet_max_tokens=400)
+    assert sorted(len(b) for b in fake.batches.values()) == [20, 20, 20, n - 20, n - 20]
+    rows = raw(cfg, "claude-sonnet")
+    assert len(rows) == n and len({r["key"] for r in rows}) == n and {r["max_tokens"] for r in rows} == {400}
+    assert len(raw(cfg, "claude-opus")) == n
+
+
+def test_supersede_is_crash_safe(jz, monkeypatch):
+    cfg = jz
+    fake = FakeBatchClient()
+    run(cfg, "sanity", fake, only=["claude-sonnet"])
+    real = cb.write_jsonl
+    monkeypatch.setattr(cb, "write_jsonl", lambda *a, **k: (_ for _ in ()).throw(OSError("disk full")))
+    with pytest.raises(OSError):
+        run(cfg, "sanity", fake, only=["claude-sonnet"], round_=2, sonnet_max_tokens=400)
+    assert {r["max_tokens"] for r in raw(cfg, "claude-sonnet")} == {200}       # raw untouched
+    monkeypatch.setattr(cb, "write_jsonl", real)
+    run(cfg, "sanity", fake, only=["claude-sonnet"], round_=2, sonnet_max_tokens=400)
+    assert fake.n("batch_create") == 2
+    assert {r["max_tokens"] for r in raw(cfg, "claude-sonnet")} == {400} and len(raw(cfg, "claude-sonnet")) == 20
+    assert len(read_jsonl(cfg.results_dir / "rq3_claude_superseded.jsonl")) == 20     # not 40
+
+
+def test_collect_uses_the_batch_max_tokens(jz):
+    cfg = jz
+    fake = FakeBatchClient(statuses=["in_progress"])
+    run(cfg, "sanity", fake, only=["claude-sonnet"], round_=2, sonnet_max_tokens=400, wait=False)
+    run(cfg, "sanity", fake, only=["claude-sonnet"], round_=2)       # flag forgotten on the rerun
+    assert fake.n("batch_create") == 1 and {r["max_tokens"] for r in raw(cfg, "claude-sonnet")} == {400}
+
+
+def test_sonnet_gate_names_its_flag(jz):
+    cfg = jz
+    fake = FakeBatchClient(empty_cids={sonnet_ids(cfg)[0]})
+    run(cfg, "sanity", fake)
+    with pytest.raises(cb.SanityGateError, match="--sonnet-max-tokens and --round 2"):
+        run(cfg, "full", fake, only=["claude-sonnet"])
