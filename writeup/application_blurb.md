@@ -1,9 +1,14 @@
-<!-- PLAN §8.2. First person as Jehanzeb, factual, no exaggeration. Numbers only from results/. -->
+<!-- PLAN §8.2. DRAFT for owner review (2026-11-09). First person as Jehanzeb. Numbers only from results/;
+sources in comments. Word counts exclude comments. -->
 
 ## Project summary (150 words)
-_TODO after results: what I built, the size of the gap (with CI), the cheap-fix result on the
-natively written set, one line on MCP scanners, and the main limitation._
+
+I built *Lost in Transliteration*, a reproducible study of prompt-injection defences in English, Urdu script, Roman Urdu and code-switched Urdu-English. I tested 400 attacks translated by an open-weight model and 57 written natively in Urdu variants. Injection classifiers lost recall outside English, most of all in Roman Urdu: Meta's Prompt Guard 2 fell from 48.5% to 11.5% (paired difference −37 points, 95% CI −42 to −32). ProtectAI's classifier flagged 85% of benign Urdu-script text. <!-- results/table_detection_drop.csv: prompt-guard-2 roman_ur; protectai-v2 fpr ur 0.847 --> Of five models, including Claude Haiku, Sonnet and Opus 5.5, only Haiku followed injections more often in a variant (+11 points, Urdu script). <!-- results/table_asr_gap.csv --> Fine-tuning XLM-R base on 1,628 examples caught 52 of 57 natively written attacks with one false positive. <!-- results/detector_summary.csv xlmr-base pct100 native --> Rule-based MCP scanners missed subtle tool poisoning in every language. <!-- results/mcp_summary.csv --> The main limitation: all data is model-written, not human-written.
 
 ## What I would research as a Resident (250 words)
-_TODO: follows from the findings (e.g. transliteration-aware safeguards, multilingual agent
-security, evaluation with human-written attacks in low-resource scripts)._
+
+This project left me with a question I could not answer with off-the-shelf tools. For the stronger classifiers, Roman Urdu attacks still scored above benign Roman Urdu text, with ROC-AUC near 0.99, yet fell below the decision threshold. <!-- results/fig3_roc_auc.csv --> In one example, "ignore" and "system prompt" survived word for word in a Roman Urdu attack, and Prompt Guard 2's score still dropped from 1.00 to 0.03. <!-- results/qualitative_failures.md atk-0090 --> The model sees the attack but is unsure of it. I want to understand why script and grammar move a safety signal that much while barely changing what the model represents. I would also like to know whether that is true for the internals of large models as well as small classifiers.
+
+As a Resident I would work on three linked problems. First, I would measure where in a model's activations an injection becomes detectable, and whether that signal transfers across scripts: Urdu, Roman Urdu, Hindi and Hinglish, Arabic and Arabizi. A linear probe was the stretch goal I did not reach here. Second, I would test defences that use that structure, such as per-language calibration, transliteration before classification, or training on small amounts of romanized data, against human-written attacks rather than model-written ones. Third, I would study agents. Tool descriptions and retrieved documents arrive in whatever language third parties write, and the MCP scanners I tested caught nothing subtle even in English.
+
+I am a native Urdu speaker, and I want safety tools to work for people who write the way many Pakistanis do online. <!-- OWNER: personal line drafted by the agent; PLAN §3.5 says only "native Urdu speaker". Edit to your own words. -->

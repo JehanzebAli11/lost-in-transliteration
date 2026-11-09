@@ -23,3 +23,25 @@
 **Open questions**
 - Single seed and 3 data levels: no seed-variance bars on the RQ4 curve. If the owner wants 3 seeds × 5 levels, it is ~40 min more on this Mac (estimate from today's 8 min for 6 runs).
 - The xlmr-base pct25 native result (37/57) is below pct0 (41/57); with one seed this cannot be told apart from noise.
+
+## 2026-11-09 21:00 PKT · Analysis and write-up draft (steps 7-8 of lit-native-mac)
+
+**Done**
+- Step 7: `make analyze` produced every figure (fig1-5, fig7a-e, fig8) and table; `skipped` = [fig9] only, the RQ7 probe (optional stretch, never run). Fixed fig7c-e to compare the best condition per base model (same test-AUC rule) and made fig8 readable.
+- Step 8: drafted `writeup/post.md` (2,801 words of prose), `writeup/application_blurb.md`, `README.md`, `SUMMARY.md`; `results/headline_numbers.json` carries every quoted table with n.
+- RQ3 Sonnet 5.5 / Opus 5.5 full results are in the draft (no placeholder needed).
+
+**Verified**
+- `make test`: 113 passed. `results/figures_manifest.json`: skipped ["fig9"].
+- Opened and checked by eye: fig2, fig4, fig7a, fig7d, fig7e, fig8 (not fig1, fig3, fig5, fig7b, fig7c).
+- Every number in the post was checked against results/ (CSV rows quoted in comments); several draft errors were corrected (see LOG step 8).
+
+**Next**
+- Owner review of `writeup/` (JZ-NEED).
+- The RQ3 worker still has to commit `results/models_*`, `usage.csv`, `spend.json` and its LOG lines. The analysis outputs committed here were built from those uncommitted rows. If that worker changes anything, rerun `make analyze` and update the RQ3 numbers in the post.
+- Vendor disclosure before any public post (post section "Disclosure before publication").
+
+**Open questions**
+- The blurb's last personal sentence is an agent draft; the owner should write it.
+- XLM-R +100% (52/57 native) is read off the curve; the pre-set selection rule picks XLM-R +0% (41/57). The post says so. The owner should decide whether that framing is right for the application.
+- Optionally run the full detector design (5 levels × 3 seeds, about 40 min on this Mac) to get seed-variance bars.
