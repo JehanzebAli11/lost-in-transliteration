@@ -407,3 +407,24 @@ profiles:
           extra_body: {reasoning: {enabled: false}}
           input_usd_per_mtok: 0.2
           output_usd_per_mtok: 0.4
+  rq3_uniform:                        # owner decision 2026-11-09 (option A): RQ3's OpenRouter models rerun at one
+                                      # shared max_tokens (1024) with `eval_models --max-tokens 1024` (make rq3-uniform*).
+                                      # Same model ids, prices, temperature 0 and reasoning setting as cloud_openrouter.
+    budget:
+      max_usd: 40                     # LIT's project cap: spend.json also holds the Claude batch costs, so
+                                      # cloud_openrouter's 3.2 (sized for the OpenRouter key alone) would stop at once
+      openrouter_key_limit_usd: 5     # the OpenRouter key's own limit (cloud_openrouter note); shown by the estimate
+    eval_models:
+      models:
+        - name: openrouter-small
+          endpoint: openrouter
+          model: openai/gpt-5.4-nano
+          extra_body: {reasoning: {enabled: false}}
+          input_usd_per_mtok: 0.2
+          output_usd_per_mtok: 1.25
+        - name: gemma
+          endpoint: openrouter
+          model: google/gemma-4-31b-it      # same family as the translator (caveat)
+          extra_body: {reasoning: {enabled: false}}
+          input_usd_per_mtok: 0.2
+          output_usd_per_mtok: 0.4

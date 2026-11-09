@@ -1,9 +1,19 @@
-"""RQ3 extension: Claude Sonnet 5.5 and Opus 5.5 through the Message Batches API (PLAN §4.3).
+"""RQ3 extension: Claude Haiku 5.5, Sonnet 5.5 and Opus 5.5 through the Message Batches API (PLAN §4.3).
 
 Same tasks and prompts as ``src/eval_models.py`` (its ``build_tasks``, ``build_prompt`` and
 ``task_key`` are reused unchanged), one Message Batch per model through JzLab's ``jzapi``
 (job ``lit_rq3``), rows appended to ``results/models_raw.jsonl`` in the same schema and scored
-by the same judge. Model names in the rows: ``claude-sonnet`` and ``claude-opus``.
+by the same judge. Model names in the rows: ``claude-sonnet``, ``claude-opus`` and ``claude-haiku``.
+
+Claude Haiku 5.5 (owner decision 2026-11-09, option A: one shared max_tokens = 1024 for RQ3). Its
+first RQ3 rows came from OpenRouter (temperature 0, max_tokens 200, reasoning disabled) and 24/150
+Urdu-script replies hit that cap. ``--only claude-haiku`` reruns it here, with the same prompts, at
+``--haiku-max-tokens`` (default 1024) and ``thinking: {type: "disabled"}`` (accepted on Haiku 5.5 at
+effort high or below; effort is left at its default). The rows keep the model name ``claude-haiku``
+(so every table and figure keeps its label) and record ``endpoint: anthropic_batch``; a row made on
+another endpoint or at another max_tokens is rerun, and the OpenRouter row it replaces moves to
+``results/rq3_claude_superseded.jsonl`` with a reason when the new row arrives (never before).
+Haiku runs only when named in ``--only``; the default set stays Sonnet + Opus.
 
 Rule 8 (PLAN §0): Claude outputs are evaluation only. These rows go to
 ``results/models_raw.jsonl``, which only ``eval_models.write_summaries`` and ``analyze`` read;
@@ -79,7 +89,11 @@ SUPERSEDED = "rq3_claude_superseded.jsonl"   # rows replaced by a later round, k
 TEMPERATURE_APPLIED = "api_default"
 OPUS_MAX_TOKENS = 1024
 OPUS_EFFORT = "low"
-MAX_TOKENS_FLAG = {"claude-sonnet": "--sonnet-max-tokens", "claude-opus": "--opus-max-tokens"}
+UNIFORM_MAX_TOKENS = 1024        # owner decision 2026-11-09 (option A): one shared RQ3 max_tokens
+HAIKU_MAX_TOKENS = UNIFORM_MAX_TOKENS
+MAX_TOKENS_FLAG = {"claude-sonnet": "--sonnet-max-tokens", "claude-opus": "--opus-max-tokens",
+                   "claude-haiku": "--haiku-max-tokens"}
+DEFAULT_MODELS = ("claude-sonnet", "claude-opus")   # claude-haiku only when named in --only
 
 
 class LitBudgetExceeded(BudgetExceeded):
@@ -104,19 +118,22 @@ class ModelSpec:
 
 
 def model_specs(cfg: Config, *, opus_max_tokens: int = OPUS_MAX_TOKENS, opus_effort: str = OPUS_EFFORT,
-                sonnet_max_tokens: int | None = None, only: list[str] | None = None) -> list[ModelSpec]:
-    """sonnet_max_tokens None = eval_models.max_tokens (200), the other models' cap."""
+                sonnet_max_tokens: int | None = None, haiku_max_tokens: int = HAIKU_MAX_TOKENS,
+                only: list[str] | None = None) -> list[ModelSpec]:
+    """sonnet_max_tokens None = eval_models.max_tokens (200), the other models' cap.
+    Without ``only``: Sonnet and Opus (DEFAULT_MODELS); Haiku runs only when named."""
     mt = int(sonnet_max_tokens) if sonnet_max_tokens is not None else int(cfg["eval_models"]["max_tokens"])
     specs = [
         ModelSpec("claude-sonnet", "sonnet", mt, {"thinking": {"type": "between_tools"}}),
         ModelSpec("claude-opus", "opus", int(opus_max_tokens), {"output_config": {"effort": opus_effort}}),
+        ModelSpec("claude-haiku", "haiku", int(haiku_max_tokens), {"thinking": {"type": "disabled"}}),
     ]
     if only:
         unknown = set(only) - {s.name for s in specs}
         if unknown:
-            raise ValueError(f"unknown model(s) {sorted(unknown)}; have claude-sonnet, claude-opus")
-        specs = [s for s in specs if s.name in only]
-    return specs
+            raise ValueError(f"unknown model(s) {sorted(unknown)}; have {', '.join(s.name for s in specs)}")
+        return [s for s in specs if s.name in only]
+    return [s for s in specs if s.name in DEFAULT_MODELS]
 
 
 def custom_id(key: str) -> str:
@@ -161,9 +178,11 @@ def model_rows(cfg: Config, model_name: str) -> dict[str, dict]:
 
 
 def needs_run(rows: dict[str, dict], spec: ModelSpec, task: dict) -> bool:
-    """No row yet, or a row made with a different max_tokens (a later round supersedes it)."""
+    """No row yet, or a row made with a different max_tokens or on another endpoint (e.g. Haiku's
+    OpenRouter rows): a later round supersedes it."""
     r = rows.get(task_key(spec.name, task))
-    return r is None or int(r.get("max_tokens") or 0) != spec.max_tokens
+    return (r is None or int(r.get("max_tokens") or 0) != spec.max_tokens
+            or r.get("endpoint", ENDPOINT) != ENDPOINT)
 
 
 def todo_tasks(cfg: Config, spec: ModelSpec, tasks: list[dict]) -> list[dict]:
@@ -187,7 +206,8 @@ def supersede_and_append(cfg: Config, new_rows: list[dict], old_by_key: dict[str
     for k, old in old_by_key.items():
         if (k, batch) not in already:
             sup.append({**old, "reason": f"superseded by batch {batch}: rerun at max_tokens {new_mt.get(k)} "
-                                         f"(this row: max_tokens {old.get('max_tokens')})",
+                                         f"via {ENDPOINT} (this row: max_tokens {old.get('max_tokens')}, "
+                                         f"endpoint {old.get('endpoint')})",
                         "superseded_by_batch": batch, "superseded_at": now_iso()})
     drop = set(old_by_key)
     model = {r["model"] for r in new_rows}
@@ -266,7 +286,7 @@ def _record_lit_spend(budget: Budget, model_id: str, n_calls: int, input_tokens:
 
 # ----------------------------------------------------------------------------- rows
 def make_row(cfg: Config, spec: ModelSpec, task: dict, text: str | None, usage: dict, model_id: str,
-             phrases: dict) -> dict:
+             phrases: dict, stop_reason: str | None = None) -> dict:
     """A models_raw.jsonl row with the same fields, in the same order, as eval_models.run_model."""
     it = task["item"]
     system, user = build_prompt(cfg, task)
@@ -282,7 +302,8 @@ def make_row(cfg: Config, spec: ModelSpec, task: dict, text: str | None, usage: 
            "input_tokens": int(usage.get("input_tokens", 0)) + int(usage.get("cache_creation_input_tokens", 0))
            + int(usage.get("cache_read_input_tokens", 0)),
            "output_tokens": int(usage.get("output_tokens", 0)), "cached": False,
-           "temperature": TEMPERATURE_APPLIED, "max_tokens": spec.max_tokens}
+           "temperature": TEMPERATURE_APPLIED, "max_tokens": spec.max_tokens,
+           "request_params": dict(spec.extra), "stop_reason": stop_reason}
     if task["setting"] == "clean":
         row.update({"success": None, "summary_ok": summary_ok(text),
                     "response_script": judge({}, text)["response_script"]})
@@ -318,7 +339,8 @@ def collect(cfg: Config, session, spec: ModelSpec, name: str, all_tasks: list[di
             continue                  # already collected at this max_tokens
         if not (it.text or "").strip() and it.stop_reason == "max_tokens":
             continue  # cut off while thinking: not an observation; a later --round fills it
-        new_rows.append(make_row(cfg, spec, task, it.text, it.usage, it.model_id or spec.model_id, phrases))
+        new_rows.append(make_row(cfg, spec, task, it.text, it.usage, it.model_id or spec.model_id, phrases,
+                                 stop_reason=it.stop_reason))
         if key in rows:
             replaced[key] = rows[key]
     superseded = supersede_and_append(cfg, new_rows, replaced, name)
@@ -406,9 +428,10 @@ def estimate(cfg: Config, specs: list[ModelSpec], *, session=None) -> dict:
 def run(cfg: Config, mode: str, *, client=None, only: list[str] | None = None, token_estimate: str = "bytes",
         wait: bool = True, interval: float = 60.0, round_: int = 1, sanity_gate: bool = True,
         opus_max_tokens: int = OPUS_MAX_TOKENS, opus_effort: str = OPUS_EFFORT,
-        sonnet_max_tokens: int | None = None, sleep=None) -> list[dict]:
+        sonnet_max_tokens: int | None = None, haiku_max_tokens: int = HAIKU_MAX_TOKENS,
+        sleep=None) -> list[dict]:
     specs = model_specs(cfg, opus_max_tokens=opus_max_tokens, opus_effort=opus_effort,
-                        sonnet_max_tokens=sonnet_max_tokens, only=only)
+                        sonnet_max_tokens=sonnet_max_tokens, haiku_max_tokens=haiku_max_tokens, only=only)
     session = _session(cfg, client, token_estimate)
     if mode == "estimate":
         return [estimate(cfg, specs, session=session)]
@@ -430,14 +453,14 @@ def run(cfg: Config, mode: str, *, client=None, only: list[str] | None = None, t
                                            extra=sent.get("extra", spec.extra))
             pending.append((spec, name))
             continue
-        if mode == "full" and sanity_gate:
-            _sanity_gate(cfg, spec)
         todo = todo_tasks(cfg, spec, tasks)
         if not todo:
             log_event(cfg, f"{spec.name}: all {len(tasks)} {mode} tasks already in models_raw.jsonl at "
                            f"max_tokens {spec.max_tokens}",
                       stage="eval_models_claude_batch")
             continue
+        if mode == "full" and sanity_gate:
+            _sanity_gate(cfg, spec)
         reqs = build_requests(cfg, spec, todo)
         worst = offline_worst_case(reqs)
         reserved = lit_reserved(cfg, session)
@@ -477,7 +500,7 @@ def main(argv=None):
     ap.add_argument("--mode", choices=["estimate", "sanity", "full"], required=True)
     ap.add_argument("--config", default=None)
     ap.add_argument("--profile", default=None)
-    ap.add_argument("--only", nargs="+", help="claude-sonnet and/or claude-opus")
+    ap.add_argument("--only", nargs="+", help="claude-sonnet, claude-opus and/or claude-haiku (default: Sonnet + Opus)")
     ap.add_argument("--token-estimate", choices=["bytes", "count"], default="bytes",
                     help="jzapi's pre-submit worst case: bytes (offline upper bound, default) or the free "
                          "count_tokens endpoint x1.05")
@@ -489,6 +512,8 @@ def main(argv=None):
     ap.add_argument("--sonnet-max-tokens", type=int, default=None,
                     help="default: eval_models.max_tokens (200), as for the other models")
     ap.add_argument("--opus-max-tokens", type=int, default=OPUS_MAX_TOKENS)
+    ap.add_argument("--haiku-max-tokens", type=int, default=HAIKU_MAX_TOKENS,
+                    help=f"Haiku 5.5 (thinking disabled) when named in --only; default {HAIKU_MAX_TOKENS}")
     ap.add_argument("--opus-effort", default=OPUS_EFFORT, choices=["low", "medium", "high", "xhigh", "max"])
     ap.add_argument("--no-sanity-gate", action="store_true")
     a = ap.parse_args(argv)
@@ -496,7 +521,7 @@ def main(argv=None):
     stats = run(cfg, a.mode, only=a.only, token_estimate=a.token_estimate, wait=not a.no_wait,
                 interval=a.poll_interval, round_=a.round_, sanity_gate=not a.no_sanity_gate,
                 opus_max_tokens=a.opus_max_tokens, opus_effort=a.opus_effort,
-                sonnet_max_tokens=a.sonnet_max_tokens)
+                sonnet_max_tokens=a.sonnet_max_tokens, haiku_max_tokens=a.haiku_max_tokens)
     if a.mode != "estimate":
         for s in stats:
             print(s)

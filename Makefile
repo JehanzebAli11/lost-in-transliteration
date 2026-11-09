@@ -10,6 +10,7 @@ LOGDIR   = logs
         data-generate data-expand phrases translate review-sample backtranslate native data \
         eval-classifiers eval-valar eval-models-sanity eval-models phase1 \
         rq3-claude-estimate rq3-claude-sanity rq3-claude \
+        rq3-uniform-estimate rq3-uniform-sanity rq3-uniform \
         train train-fg train-status eval-detector phase2 \
         mcp-build mcp-check mcp-scan phase3 probe analyze smoke smoke-clean ignore-large all
 
@@ -80,6 +81,29 @@ rq3-claude-sanity: ## RQ3 Claude batch: first 20 tasks per model; waits, then wr
 
 rq3-claude: ## RQ3 Claude batch: full run (resumable; refuses without a clean sanity run)
 	$(CLAUDE_BATCH) --mode full
+
+# RQ3 at one shared max_tokens = 1024 (owner decision 2026-11-09, option A; REVIEW.md issue 1).
+# Claude Haiku + Sonnet rerun through the Batch API (Opus is already at 1024: nothing to do);
+# GPT-5.4 nano + Gemma rerun through OpenRouter (profile rq3_uniform; needs OPENROUTER_API_KEY in
+# the environment or .env). Old rows move to results/rq3_claude_superseded.jsonl (Claude) or
+# results/rq3_superseded.jsonl (OpenRouter) with a reason as each new row arrives. Rounds: Sonnet
+# already has sanity r1/r2 and full r1, so the uniform batches are sanity round 3 and full round 2.
+RQ3_MT        = 1024
+UNIFORM_BATCH = $(CLAUDE_BATCH) --only claude-haiku claude-sonnet claude-opus \
+                --haiku-max-tokens $(RQ3_MT) --sonnet-max-tokens $(RQ3_MT) --opus-max-tokens $(RQ3_MT)
+UNIFORM_OR    = LIT_PROFILE= $(RUN).eval_models --profile rq3_uniform --only openrouter-small gemma \
+                --max-tokens $(RQ3_MT)
+
+rq3-uniform-estimate: ## RQ3 at max_tokens 1024: offline worst case of the remaining work + both cap headrooms
+	LIT_PROFILE= $(RUN).rq3_uniform estimate --max-tokens $(RQ3_MT)
+
+rq3-uniform-sanity: ## RQ3 at 1024: first 20 tasks per model, all five (Claude batch, then OpenRouter)
+	$(UNIFORM_BATCH) --mode sanity --round 3
+	$(UNIFORM_OR) --limit 20
+
+rq3-uniform: ## RQ3 at 1024: full rerun (resumable; Claude refuses without the sanity round)
+	$(UNIFORM_BATCH) --mode full --round 2
+	$(UNIFORM_OR)
 
 # ---------------------------------------------------------------- §5 Phase 2
 train: ## Phase 2 training in the background (nohup; checkpoints; resumes on rerun)
