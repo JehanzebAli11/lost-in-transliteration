@@ -157,6 +157,15 @@ make eval-models       # full run; resumable; stops cleanly at 95% of the $40 ca
 lower `eval_models.max_attacks_per_lang` only if the remaining models still need room.
 Check `models_clean_controls.csv`: `summary_ok` should be near 1 for every model and language.
 
+RQ3 extension, Claude Sonnet 5.5 + Opus 5.5 as Message Batches (jzapi job `lit_rq3`, $20 cap; needs
+`pip install -e ~/lab/JzLab` in this venv and the key in `~/lab/JzLab/.env`):
+```bash
+make rq3-claude-estimate  # offline worst case per model, sanity and full; no network
+make rq3-claude-sanity    # 20 tasks per model; waits for the batches; read the rows and LOG line
+make rq3-claude           # the remaining tasks; refuses without a clean sanity run; resumable
+```
+Ctrl-C while waiting is safe: rerunning the same target polls the submitted batch, never resubmits.
+
 ## Step 5 — Phase 2 (start as early as the data exists; runs in the background)
 
 ```bash

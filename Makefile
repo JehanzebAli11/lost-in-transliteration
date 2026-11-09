@@ -9,6 +9,7 @@ LOGDIR   = logs
 .PHONY: help setup test todos connectivity \
         data-generate data-expand phrases translate review-sample backtranslate native data \
         eval-classifiers eval-valar eval-models-sanity eval-models phase1 \
+        rq3-claude-estimate rq3-claude-sanity rq3-claude \
         train train-fg train-status eval-detector phase2 \
         mcp-build mcp-check mcp-scan phase3 probe analyze smoke smoke-clean ignore-large all
 
@@ -65,6 +66,20 @@ eval-models: ## RQ3 full run (budget-guarded, resumable)
 	$(RUN).eval_models
 
 phase1: eval-classifiers eval-valar eval-models ## all Phase 1 evaluations
+
+# RQ3 extension: Claude Sonnet 5.5 + Opus 5.5 as Message Batches through JzLab's jzapi (job lit_rq3).
+# Needs `pip install -e ~/lab/JzLab` in this venv and the key in ~/lab/JzLab/.env. Runs on the base
+# config (LIT_PROFILE cleared): same tasks as the OpenRouter run, LIT cap $40 x 0.95.
+CLAUDE_BATCH = LIT_PROFILE= $(RUN).eval_models_claude_batch
+
+rq3-claude-estimate: ## RQ3 Claude batch: offline worst-case cost of the sanity and full runs (no network)
+	$(CLAUDE_BATCH) --mode estimate
+
+rq3-claude-sanity: ## RQ3 Claude batch: first 20 tasks per model; waits, then writes rows (read them!)
+	$(CLAUDE_BATCH) --mode sanity
+
+rq3-claude: ## RQ3 Claude batch: full run (resumable; refuses without a clean sanity run)
+	$(CLAUDE_BATCH) --mode full
 
 # ---------------------------------------------------------------- §5 Phase 2
 train: ## Phase 2 training in the background (nohup; checkpoints; resumes on rerun)
