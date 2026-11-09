@@ -71,6 +71,15 @@ def test_full_pipeline(cfg, tmp_path, monkeypatch):
         assert (cfg.results_dir / name).exists(), name
     head = read_json(cfg.results_dir / "headline_numbers.json")
     assert head["classifier_tpr"]["values"] and head["model_asr"]["values"]
+    # every table the write-up quotes is carried with its counts (n) and source file
+    for key, n_field in [("classifiers", "n_attack"), ("detection_gaps", "n_en"), ("models", "n"),
+                         ("asr_gaps", "n_en"), ("detectors", "n_attack"), ("detector_curve", "n_seeds"),
+                         ("mcp", "n")]:
+        assert head[key]["source"].startswith("results/"), key
+        assert head[key]["rows"] and all(isinstance(r[n_field], int) for r in head[key]["rows"]), key
+    for r in head["models"]["rows"]:
+        assert r["strict_successes"] == r["successes"] - r["mentions_only"]
+        assert abs(r["strict_asr"] - r["strict_successes"] / r["n"]) < 1e-9
     drop = (cfg.results_dir / "table_detection_drop.md").read_text()
     assert "roman_ur" in drop and "native" in drop
 

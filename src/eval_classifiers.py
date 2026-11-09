@@ -33,13 +33,18 @@ class Classifier(Protocol):
 
 
 def pick_device(pref: str = "auto") -> str:
+    """``auto`` picks cuda, then mps (Apple silicon), then cpu; any other value is kept."""
     if pref != "auto":
         return pref
     try:
         import torch
-        return "cuda" if torch.cuda.is_available() else "cpu"
     except ImportError:  # pragma: no cover
         return "cpu"
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
 
 
 class HFClassifier:

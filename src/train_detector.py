@@ -17,6 +17,7 @@ Weights stay in models/ (git-ignored) and are never uploaded (PLAN §0 rule 5).
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import math
 import random
@@ -116,10 +117,15 @@ def drop_eval_duplicates(cfg: Config, train: list[dict], evals: list[dict]) -> l
 
 # ----------------------------------------------------------------------------- training
 def pick_device(pref: str) -> str:
+    """``auto`` picks cuda, then mps, then cpu (same rule as the detector/classifier eval)."""
+    from .eval_classifiers import pick_device as _pick
+    return _pick(pref)
+
+
+def use_bf16(device: str, dc: dict) -> bool:
+    """bf16 autocast is CUDA-only; MPS and CPU train in fp32."""
     import torch
-    if pref == "auto":
-        return "cuda" if torch.cuda.is_available() else "cpu"
-    return pref
+    return device == "cuda" and bool(dc.get("bf16", True)) and torch.cuda.is_bf16_supported()
 
 
 def run_dir(cfg: Config, base_name: str, pct: int, seed: int) -> Path:
@@ -171,7 +177,7 @@ def train_one(cfg: Config, base_name: str, hf_id: str, pct: int, seed: int, rows
         start_epoch = state["epoch"] + 1
         order_rng.setstate(state["order_rng"])
         log_event(cfg, f"{base_name} pct{pct} seed{seed}: resuming at epoch {start_epoch}", stage="train")
-    use_bf16 = device == "cuda" and bool(dc.get("bf16", True)) and torch.cuda.is_bf16_supported()
+    bf16 = use_bf16(device, dc)
     t0 = time.time()
     losses = []
     for epoch in range(start_epoch, epochs):
@@ -182,7 +188,8 @@ def train_one(cfg: Config, base_name: str, hf_id: str, pct: int, seed: int, rows
         ep_loss = 0.0
         for batch in loader:
             batch = {k: v.to(device) for k, v in batch.items()}
-            with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=use_bf16):
+            with (torch.autocast(device_type="cuda", dtype=torch.bfloat16) if bf16
+                  else contextlib.nullcontext()):
                 loss = model(**batch).loss
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -206,7 +213,7 @@ def train_one(cfg: Config, base_name: str, hf_id: str, pct: int, seed: int, rows
         comp[k] = comp.get(k, 0) + 1
     meta = {"status": "done", "base": base_name, "hf_id": hf_id, "pct": pct, "seed": seed,
             "n_train": len(rows), "composition": dict(sorted(comp.items())), "epochs": epochs,
-            "epoch_losses": losses, "device": device, "bf16": use_bf16,
+            "epoch_losses": losses, "device": device, "bf16": bf16,
             "train_seconds": round(time.time() - t0, 1), "finished": now_iso()}
     write_json(meta_path, meta)
     try:

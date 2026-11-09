@@ -245,13 +245,14 @@ eval_models:
 
 # ----------------------------------------------------------------------------- detector (§5)
 detector:
-  base_models:
+  base_models:                        # verified 2026-11-09 on the HF API: public, not gated
     - name: xlmr-base
-      hf_id: "TODO_VERIFY: FacebookAI/xlm-roberta-base"
+      hf_id: FacebookAI/xlm-roberta-base                     # MIT, rev e73636d
     - name: mdistilbert
-      hf_id: "TODO_VERIFY: distilbert/distilbert-base-multilingual-cased"
-  conditions: [0, 10, 25, 50, 100]    # % of Urdu-variant train data added to EN
-  seeds: [1, 2, 3]
+      hf_id: distilbert/distilbert-base-multilingual-cased   # Apache-2.0, rev 45c032a
+  conditions: [0, 25, 100]            # % of Urdu-variant train data added to EN; reduced 2026-11-09
+                                      # from [0, 10, 25, 50, 100] (PLAN §11 fallback: Mac MPS, deadline)
+  seeds: [1]                          # reduced 2026-11-09 from [1, 2, 3], same reason
   max_length: 256
   epochs: 3
   lr: 2.0e-5

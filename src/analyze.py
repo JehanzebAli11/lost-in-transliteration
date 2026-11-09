@@ -99,7 +99,9 @@ def grouped_bars(ax, groups: list[str], series: list[str], values: dict, errs: d
         if errs:
             lo = [ys[i] - errs.get((g, s), (np.nan, np.nan))[0] for i, g in enumerate(groups)]
             hi = [errs.get((g, s), (np.nan, np.nan))[1] - ys[i] for i, g in enumerate(groups)]
-            ax.errorbar(xs, ys, yerr=[np.nan_to_num(lo), np.nan_to_num(hi)], fmt="none",
+            # clip: CIs read back from CSV can sit 1e-16 past the rate at 0 or 1
+            ax.errorbar(xs, ys, yerr=[np.clip(np.nan_to_num(lo), 0, None), np.clip(np.nan_to_num(hi), 0, None)],
+                        fmt="none",
                         ecolor=INK2, elinewidth=1, capsize=2)
     for i, g in enumerate(groups):  # say so when a scanner/system has no data for this panel
         if all(np.isnan(values.get((g, s), np.nan)) for s in series):
@@ -333,7 +335,10 @@ def fig_detector_vs_data(cfg: Config, curve: list[dict], metric: str, name: str,
                    ylabel=title if ax is axes[0][0] else None, ylim=(0, 1.02))
         ax.set_xticks(sorted({f(r["pct"]) for r in rows}))
     legend(axes[0][0], loc="best")
-    fig.suptitle(f"{title} vs training data (test split; band = ±1 sd over seeds)", color=INK, fontsize=11, x=0.01,
+    seeds = max((int(f(r.get("n_seeds", 1))) for r in rows if f(r.get("n_seeds", 1)) == f(r.get("n_seeds", 1))),
+                default=1)
+    band = "band = ±1 sd over seeds" if seeds > 1 else "1 seed, no seed-variance band"
+    fig.suptitle(f"{title} vs training data (test split; {band})", color=INK, fontsize=11, x=0.01,
                  ha="left")
     return save(fig, cfg.figures_dir / f"{name}.png")
 
@@ -571,7 +576,35 @@ def headline_numbers(cfg: Config, clf: list[dict], mrows: list[dict], curve: lis
                             "base": best[0] if best else None, "pct": best[1] if best else None}
     out["native_gate"] = read_json(cfg.results_dir / "native_gate_report.json", None)
     out["backtranslation"] = read_json(cfg.results_dir / "backtranslation_summary.json", None)
+    # Every table the write-up quotes, row by row with its counts, so each number has an n.
+    for key, name in [("classifiers", "classifiers_summary.csv"), ("detection_gaps", "table_detection_drop.csv"),
+                      ("models", "models_summary.csv"), ("asr_gaps", "table_asr_gap.csv"),
+                      ("clean_controls", "models_clean_controls.csv"), ("detectors", "detector_summary.csv"),
+                      ("detector_curve", "detector_curve.csv"), ("mcp", "mcp_summary.csv")]:
+        out[key] = {"source": f"results/{name}",
+                    "rows": [{k: _num(v) for k, v in r.items()} for r in read_csv(cfg.results_dir / name)]}
+    for r in out["models"]["rows"]:
+        # success that is likely only a quote of the token/phrase (judge.mentions_only) taken out
+        if isinstance(r.get("n"), int) and isinstance(r.get("mentions_only"), int) and r["n"]:
+            r["strict_successes"] = r["successes"] - r["mentions_only"]
+            r["strict_asr"] = r["strict_successes"] / r["n"]
+            r["strict_ci_lo"], r["strict_ci_hi"] = wilson_ci(r["strict_successes"], r["n"])
     return out
+
+
+def _num(v):
+    """CSV cell -> int, float or str (counts stay ints so they read as n)."""
+    if v is None or v == "":
+        return v
+    try:
+        return int(v)
+    except ValueError:
+        pass
+    try:
+        x = float(v)
+    except ValueError:
+        return v
+    return x if x == x else None  # NaN -> null in JSON
 
 
 def main(argv=None):

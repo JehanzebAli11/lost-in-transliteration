@@ -142,3 +142,41 @@ Stages append here automatically.
 - 2026-11-09T20:28:30+05:00 [eval_models_claude_batch] claude-sonnet: submitted batch rq3_claude-sonnet_sanity_r2 (msgbatch_013rEwQnWBRVBvXjCrDyoUTT, 20 requests, worst case $0.0673); sampling at the API default (API 2026-10-21 rejects temperature), params {'thinking': {'type': 'between_tools'}}, max_tokens 400
 - 2026-11-09T20:31:33+05:00 [eval_models_claude_batch] claude-sonnet: {'model': 'claude-sonnet', 'batch': 'rq3_claude-sonnet_sanity_r2', 'results': {'succeeded': 20}, 'stop_reasons': {'end_turn': 17, 'max_tokens': 3}, 'at_max_tokens_share': 0.15, 'empty_at_max_tokens': 0, 'new_rows': 20, 'superseded_rows': 20, 'unmatched': 0, 'output_tokens_median': 266.5, 'output_tokens_max': 400, 'max_tokens': 400}
 - 2026-11-09 Phase 2 on the Mac (native session, MacBook, MPS): step 1 `make test` 82 passed with the existing .venv (torch 2.15.0, `torch.backends.mps.is_available()` True). Step 2, MPS support, tests first (`tests/test_device.py`, 20 cases, monkeypatched availability): `pick_device("auto")` now picks cuda -> mps -> cpu. There is one implementation in `src/eval_classifiers.py`, used by `HFClassifier` and therefore by `src/eval_detector.py`. `src/train_detector.py` reuses it, and its bf16 check moved into `use_bf16()` (CUDA only; MPS and CPU train in fp32; no autocast context is entered unless bf16 is on). An explicit `device:` value is still kept as given. Side effect: Phase 1/3 classifier stages on `auto` would now also use MPS on a Mac (their results already exist and were not re-run). Smoke check (scratch test, tmp dir, not committed): tiny classifier trained at pct 0/100 and scored by eval_detector on `auto` -> meta `device: mps`, `bf16: false`, finite losses. `src/probe.py` keeps its own cuda/cpu choice (not Phase 2, untouched). `make test`: 102 passed.
+- 2026-11-09 Step 3, detector base IDs verified on the Hugging Face API (huggingface.co/api/models/<id>, checked 2026-11-09): `FacebookAI/xlm-roberta-base` exists, public, not gated, licence MIT (rev e73636d, last modified 2024-02-19); `distilbert/distilbert-base-multilingual-cased` exists, public, not gated, licence Apache-2.0 (rev 45c032a, last modified 2024-05-06). Both `TODO_VERIFY` markers removed from `detector.base_models` in config.yaml.
+- 2026-11-09 Step 4, reduced Phase 2 config (PLAN §11 "shrink Phase 2 to 3 conditions with 1 seed", RUNBOOK step 5): `detector.conditions: [0, 25, 100]` (was [0, 10, 25, 50, 100]) and `seeds: [1]` (was [1, 2, 3]), so 6 runs instead of 30. Why: training runs on the MacBook's MPS GPU (fp32) instead of the Spark, and must finish by Thu 12 Nov 12:00 PKT for the write-up (draft Sat 14 Nov, submission 19 Nov). Consequence for the write-up: one seed means no seed-variance error bars on the RQ4 curve, and 3 points instead of 5. Train set sizes: pct0 407, pct25 713, pct100 1,628 rows.
+- 2026-11-09T20:40:20+05:00 [train] train xlmr-base pct0 seed1: 407 examples
+- 2026-11-09T20:41:32+05:00 [analyze] analyze: fig2 failed: ValueError: 'yerr' must not contain negative values
+- 2026-11-09T20:41:33+05:00 [analyze] analyze: fig8 failed: ValueError: 'yerr' must not contain negative values
+- 2026-11-09T20:41:33+05:00 [analyze] analyze: produced ['fig1', 'fig3', 'fig4', 'fig5', 'qualitative', 'table6']; skipped ['fig2', 'fig7a', 'fig7b', 'fig7c', 'fig7d', 'fig7e', 'fig8', 'fig9']
+- 2026-11-09T20:42:33+05:00 [train] xlmr-base pct0 seed1: epoch 1/3 loss 0.6122
+- 2026-11-09T20:42:43+05:00 [train] xlmr-base pct0 seed1: epoch 2/3 loss 0.2944
+- 2026-11-09T20:42:54+05:00 [train] xlmr-base pct0 seed1: epoch 3/3 loss 0.0841
+- 2026-11-09T20:42:55+05:00 [train] train xlmr-base pct25 seed1: 713 examples
+- 2026-11-09T20:43:17+05:00 [train] xlmr-base pct25 seed1: epoch 1/3 loss 0.5349
+- 2026-11-09 Step 5, training started 20:40:20 PKT (`make train`, PID 10397, `caffeinate -i -w <pid>` keeps the Mac awake; `caffeinate -i make train` alone would exit at once because the target backgrounds itself). XLM-R pct0 on MPS: epoch 1 ended 20:42:33 (incl. the 1.1 GB weights download), epochs 2-3 took ~10.5 s each for 407 rows. JZ-STATUS ETA for all 6 runs: ~21:00 PKT Mon 9 Nov, well before Thu 12 Nov 12:00 PKT.
+- 2026-11-09T20:43:33+05:00 [train] xlmr-base pct25 seed1: epoch 2/3 loss 0.2029
+- 2026-11-09T20:43:49+05:00 [train] xlmr-base pct25 seed1: epoch 3/3 loss 0.0313
+- 2026-11-09T20:43:50+05:00 [train] train xlmr-base pct100 seed1: 1628 examples
+- 2026-11-09T20:44:31+05:00 [train] xlmr-base pct100 seed1: epoch 1/3 loss 0.3149
+- 2026-11-09T20:45:09+05:00 [train] xlmr-base pct100 seed1: epoch 2/3 loss 0.0324
+- 2026-11-09T20:45:41+05:00 [train] xlmr-base pct100 seed1: epoch 3/3 loss 0.0040
+- 2026-11-09T20:45:42+05:00 [train] train mdistilbert pct0 seed1: 407 examples
+- 2026-11-09T20:46:52+05:00 [train] mdistilbert pct0 seed1: epoch 1/3 loss 0.5436
+- 2026-11-09T20:46:58+05:00 [train] mdistilbert pct0 seed1: epoch 2/3 loss 0.1666
+- 2026-11-09T20:47:03+05:00 [train] mdistilbert pct0 seed1: epoch 3/3 loss 0.0441
+- 2026-11-09T20:47:03+05:00 [train] train mdistilbert pct25 seed1: 713 examples
+- 2026-11-09T20:47:14+05:00 [train] mdistilbert pct25 seed1: epoch 1/3 loss 0.4768
+- 2026-11-09T20:47:25+05:00 [train] mdistilbert pct25 seed1: epoch 2/3 loss 0.0533
+- 2026-11-09T20:47:34+05:00 [train] mdistilbert pct25 seed1: epoch 3/3 loss 0.0133
+- 2026-11-09T20:47:35+05:00 [train] train mdistilbert pct100 seed1: 1628 examples
+- 2026-11-09T20:48:00+05:00 [train] mdistilbert pct100 seed1: epoch 1/3 loss 0.2976
+- 2026-11-09T20:48:16+05:00 [train] mdistilbert pct100 seed1: epoch 2/3 loss 0.0066
+- 2026-11-09T20:48:32+05:00 [train] mdistilbert pct100 seed1: epoch 3/3 loss 0.0021
+- 2026-11-09T20:48:52+05:00 [eval_detector] scored ft:xlmr-base:pct000:s1 on 1280 held-out items
+- 2026-11-09T20:48:57+05:00 [eval_detector] scored ft:xlmr-base:pct025:s1 on 1280 held-out items
+- 2026-11-09T20:49:01+05:00 [eval_detector] scored ft:xlmr-base:pct100:s1 on 1280 held-out items
+- 2026-11-09T20:49:03+05:00 [eval_detector] scored ft:mdistilbert:pct000:s1 on 1280 held-out items
+- 2026-11-09T20:49:05+05:00 [eval_detector] scored ft:mdistilbert:pct025:s1 on 1280 held-out items
+- 2026-11-09T20:49:06+05:00 [eval_detector] scored ft:mdistilbert:pct100:s1 on 1280 held-out items
+- 2026-11-09 Step 5 done: all 6 runs finished at 20:48:32 PKT (8 min 12 s from start, incl. ~2 min of weights downloads); every meta.json says `device: mps`, `bf16: false`. Train seconds: xlmr-base 37.6 / 51.9 / 107.8, mdistilbert 17.6 / 29.9 / 55.8 (pct 0 / 25 / 100). `make eval-detector` (MPS) scored each run on 1,280 held-out items (test + heldout_style + native) by 20:49:06 -> results/detector/*.jsonl, results/detector_summary.csv, results/detector_curve.csv. Weights stay in models/ (git-ignored). Headline (single seed): xlmr-base EN-only already transfers (native 41/57 = 0.719, test roman_ur 101/107); with 100% Urdu-variant data native 52/57 = 0.912 at 1/57 FP, heldout_style roman_ur 78/80. mdistilbert generalises poorly beyond the test templates (native 7-14/57, heldout_style 0.24-0.41 in every language incl. English).
+- 2026-11-09 analyze bug fixed (tests first, `tests/test_analyze_edges.py`): fig2 and fig8 were skipped on the real results because Wilson bounds at rates of exactly 0 or 1 came out 1e-16 past the rate (lo=8.7e-19 at p=0, hi=0.9999999999999999 at p=1), giving matplotlib a negative error-bar length. `metrics.wilson_ci` now brackets the rate exactly and `analyze.grouped_bars` clips bar lengths at 0 (older CSVs such as mcp_summary.csv still carry the residue). Effect on any reported CI: < 1e-15. The detector-vs-data figure title now says "1 seed, no seed-variance band" when n_seeds is 1 instead of claiming a ±1 sd band. `headline_numbers.json` now carries every table the write-up quotes row by row with counts (classifiers, detection_gaps, models incl. strict = successes minus mentions_only with Wilson CI, asr_gaps, clean_controls, detectors, detector_curve, mcp) and its source file (test added in test_end_to_end). Correction to the 2026-11-05 classifier LOG line: Roman Urdu is the weakest translated variant for 3/6 classifiers (prompt-guard-2, wolf-defender, horizon-guard), not 4/6; for prompt-guard-2-22m Urdu script is lower (0.000 vs 0.020). `make test`: 112 passed.
