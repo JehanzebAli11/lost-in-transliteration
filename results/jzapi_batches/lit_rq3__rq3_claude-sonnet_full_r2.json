@@ -1,0 +1,24 @@
+{
+  "actual_cost_usd": 1.514375,
+  "batch_id": "msgbatch_01DzRhTfPJRyv9o19oNJQYAk",
+  "created_utc": "2026-11-09T16:48:15Z",
+  "job": "lit_rq3",
+  "logged_utc": "2026-11-09T16:52:22Z",
+  "model_ids": [
+    "claude-sonnet-5-5"
+  ],
+  "n_requests": 907,
+  "name": "rq3_claude-sonnet_full_r2",
+  "processing_status": "ended",
+  "repo": "lost-in-transliteration",
+  "request_counts": {
+    "canceled": 0,
+    "errored": 0,
+    "expired": 0,
+    "processing": 0,
+    "succeeded": 907
+  },
+  "requests_sha256": "396efdffeb882fbc8e24922ed69f65033f7f3340409bc17f55e7eb7a44fae23b",
+  "status": "logged",
+  "worst_case_usd": 5.794307
+}

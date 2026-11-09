@@ -235,5 +235,73 @@
       "max_tokens": 1024
     },
     "collected": "2026-11-09T21:35:51+05:00"
+  },
+  "rq3_claude-sonnet_full_r2": {
+    "model": "claude-sonnet",
+    "batch_id": "msgbatch_01DzRhTfPJRyv9o19oNJQYAk",
+    "n_requests": 907,
+    "submitted": "2026-11-09T21:48:17+05:00",
+    "lit_spend_recorded": true,
+    "worst_case_offline_usd": 5.794307,
+    "max_tokens": 1024,
+    "extra": {
+      "thinking": {
+        "type": "between_tools"
+      }
+    },
+    "lit_spend_usd": 1.514375,
+    "stats": {
+      "model": "claude-sonnet",
+      "batch": "rq3_claude-sonnet_full_r2",
+      "results": {
+        "succeeded": 907
+      },
+      "stop_reasons": {
+        "end_turn": 907
+      },
+      "at_max_tokens_share": 0.0,
+      "empty_at_max_tokens": 0,
+      "new_rows": 907,
+      "superseded_rows": 907,
+      "unmatched": 0,
+      "output_tokens_median": 222,
+      "output_tokens_max": 571,
+      "max_tokens": 1024
+    },
+    "collected": "2026-11-09T21:52:24+05:00"
+  },
+  "rq3_claude-haiku_full_r2": {
+    "model": "claude-haiku",
+    "batch_id": "msgbatch_019LbxRXTwEzdRUF3TH17mdP",
+    "n_requests": 907,
+    "submitted": "2026-11-09T21:48:18+05:00",
+    "lit_spend_recorded": true,
+    "worst_case_offline_usd": 0.289715,
+    "max_tokens": 1024,
+    "extra": {
+      "thinking": {
+        "type": "disabled"
+      }
+    },
+    "lit_spend_usd": 0.053189,
+    "stats": {
+      "model": "claude-haiku",
+      "batch": "rq3_claude-haiku_full_r2",
+      "results": {
+        "succeeded": 907
+      },
+      "stop_reasons": {
+        "end_turn": 907
+      },
+      "at_max_tokens_share": 0.0,
+      "empty_at_max_tokens": 0,
+      "new_rows": 907,
+      "superseded_rows": 907,
+      "unmatched": 0,
+      "output_tokens_median": 147,
+      "output_tokens_max": 466,
+      "max_tokens": 1024
+    },
+    "collected": "2026-11-09T21:52:27+05:00"
   }
 }

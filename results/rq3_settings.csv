@@ -1,0 +1,6 @@
+model,model_id,endpoint,max_tokens,thinking_reasoning,thinking_reasoning_source,temperature,n,n_attack,n_clean
+claude-haiku,claude-haiku-5-5,anthropic_batch,1024,"{""thinking"": {""type"": ""disabled""}}",row,api_default,927,807,120
+claude-opus,claude-opus-5-5,anthropic_batch,1024,"{""output_config"": {""effort"": ""low""}}",results/rq3_claude_batches.json,api_default,927,807,120
+claude-sonnet,claude-sonnet-5-5,anthropic_batch,1024,"{""thinking"": {""type"": ""between_tools""}}",row,api_default,927,807,120
+gemma,google/gemma-4-31b-it,openrouter,1024,"{""reasoning"": {""enabled"": false}}",row,0.0,927,807,120
+openrouter-small,openai/gpt-5.4-nano,openrouter,1024,"{""reasoning"": {""enabled"": false}}",row,0.0,927,807,120

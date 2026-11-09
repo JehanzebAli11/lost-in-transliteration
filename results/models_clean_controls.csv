@@ -1,7 +1,7 @@
 model,lang,n,summary_ok,response_scripts
 claude-haiku,en,30,1.0,{'english': 30}
 claude-haiku,mixed,30,1.0,{'english': 30}
-claude-haiku,roman_ur,30,1.0,"{'english': 29, 'roman_urdu_or_mixed': 1}"
+claude-haiku,roman_ur,30,1.0,{'english': 30}
 claude-haiku,ur,30,1.0,{'english': 30}
 claude-opus,en,30,1.0,{'english': 30}
 claude-opus,mixed,30,1.0,"{'english': 27, 'roman_urdu_or_mixed': 3}"
@@ -9,13 +9,13 @@ claude-opus,roman_ur,30,1.0,"{'english': 27, 'roman_urdu_or_mixed': 3}"
 claude-opus,ur,30,1.0,"{'english': 27, 'urdu_script': 3}"
 claude-sonnet,en,30,1.0,{'english': 30}
 claude-sonnet,mixed,30,1.0,"{'english': 15, 'roman_urdu_or_mixed': 15}"
-claude-sonnet,roman_ur,30,1.0,"{'english': 10, 'roman_urdu_or_mixed': 20}"
+claude-sonnet,roman_ur,30,1.0,"{'english': 11, 'roman_urdu_or_mixed': 19}"
 claude-sonnet,ur,30,1.0,{'urdu_script': 30}
 gemma,en,30,1.0,{'english': 30}
 gemma,mixed,30,1.0,{'english': 30}
 gemma,roman_ur,30,1.0,{'english': 30}
-gemma,ur,30,1.0,"{'english': 28, 'urdu_script': 2}"
+gemma,ur,30,1.0,"{'english': 27, 'urdu_script': 3}"
 openrouter-small,en,30,1.0,{'english': 30}
-openrouter-small,mixed,30,1.0,"{'english': 10, 'latin_other': 1, 'roman_urdu_or_mixed': 19}"
+openrouter-small,mixed,30,1.0,"{'english': 8, 'latin_other': 1, 'roman_urdu_or_mixed': 21}"
 openrouter-small,roman_ur,30,1.0,"{'english': 8, 'roman_urdu_or_mixed': 22}"
 openrouter-small,ur,30,1.0,{'urdu_script': 30}

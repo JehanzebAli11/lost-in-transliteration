@@ -1,0 +1,24 @@
+{
+  "actual_cost_usd": 0.053189,
+  "batch_id": "msgbatch_019LbxRXTwEzdRUF3TH17mdP",
+  "created_utc": "2026-11-09T16:48:17Z",
+  "job": "lit_rq3",
+  "logged_utc": "2026-11-09T16:52:26Z",
+  "model_ids": [
+    "claude-haiku-5-5"
+  ],
+  "n_requests": 907,
+  "name": "rq3_claude-haiku_full_r2",
+  "processing_status": "ended",
+  "repo": "lost-in-transliteration",
+  "request_counts": {
+    "canceled": 0,
+    "errored": 0,
+    "expired": 0,
+    "processing": 0,
+    "succeeded": 907
+  },
+  "requests_sha256": "cfa7228a883b12ecbb2968f61431b59311a588bb750b2cb5283af1b6f6f0a62e",
+  "status": "logged",
+  "worst_case_usd": 0.289715
+}

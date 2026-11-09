@@ -1,15 +1,15 @@
 {
   "max_usd": 40.0,
   "stop_fraction": 0.95,
-  "total_usd": 5.75005626,
-  "calls": 10291,
+  "total_usd": 7.55911306,
+  "calls": 13919,
   "cached_calls": 124,
   "by_model": {
     "google/gemma-4-31b-it": {
-      "calls": 4582,
-      "input_tokens": 951555,
-      "output_tokens": 234983,
-      "usd": 0.2843042
+      "calls": 5489,
+      "input_tokens": 1167868,
+      "output_tokens": 293006,
+      "usd": 0.350776
     },
     "qwen/qwen3.5-27b": {
       "calls": 67,
@@ -24,16 +24,16 @@
       "usd": 0.2357657
     },
     "openai/gpt-5.4-nano": {
-      "calls": 1874,
-      "input_tokens": 446940,
-      "output_tokens": 219698,
-      "usd": 0.3640105
+      "calls": 2781,
+      "input_tokens": 662475,
+      "output_tokens": 325229,
+      "usd": 0.53903125
     },
     "claude-sonnet-5-5": {
-      "calls": 967,
-      "input_tokens": 409200,
-      "output_tokens": 234324,
-      "usd": 1.58082
+      "calls": 1874,
+      "input_tokens": 790605,
+      "output_tokens": 460918,
+      "usd": 3.095195
     },
     "claude-opus-5-5": {
       "calls": 927,
@@ -42,10 +42,10 @@
       "usd": 3.248954
     },
     "claude-haiku-5-5": {
-      "calls": 20,
-      "input_tokens": 9265,
-      "output_tokens": 3063,
-      "usd": 0.001229
+      "calls": 927,
+      "input_tokens": 390670,
+      "output_tokens": 139539,
+      "usd": 0.05441825
     }
   },
   "by_stage": {
@@ -62,13 +62,13 @@
       "usd": 0.04183686
     },
     "eval_models": {
-      "calls": 7516,
-      "usd": 5.5683838
+      "calls": 11144,
+      "usd": 7.3774406
     },
     "mcp": {
       "calls": 124,
       "usd": 0.0059756
     }
   },
-  "updated": "2026-11-09T21:36:18+05:00"
+  "updated": "2026-11-09T22:06:11+05:00"
 }

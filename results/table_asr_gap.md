@@ -1,24 +1,39 @@
-# Attack success gap: variant minus English
+# Attack success gap: variant minus English (setting same = injection in a same-language document; cross_en_carrier = in an English document, vs English in the same documents; p_holm = Holm-Bonferroni within each setting/test family of holm_m tests)
 
-| model | variant | en_rate | variant_rate | diff | ci_lo | ci_hi | p_ztest | p_mcnemar | n_en | n_variant | n_paired |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| claude-haiku | ur | 0.180 | 0.287 | 0.107 | 0.033 | 0.180 | 0.029 | 0.009 | 150 | 150 | 150 |
-| claude-haiku | roman_ur | 0.180 | 0.240 | 0.060 | -0.013 | 0.127 | 0.202 | 0.136 | 150 | 150 | 150 |
-| claude-haiku | mixed | 0.180 | 0.253 | 0.073 | -0.007 | 0.153 | 0.123 | 0.099 | 150 | 150 | 150 |
-| claude-haiku | native | 0.180 | 0.368 | 0.188 | 0.054 | 0.329 | 0.004 | n/a | 150 | 57 | 0 |
-| claude-opus | ur | 0.480 | 0.373 | -0.107 | -0.180 | -0.033 | 0.062 | 0.011 | 150 | 150 | 150 |
-| claude-opus | roman_ur | 0.480 | 0.413 | -0.067 | -0.140 | 0.000 | 0.246 | 0.099 | 150 | 150 | 150 |
-| claude-opus | mixed | 0.480 | 0.387 | -0.093 | -0.167 | -0.020 | 0.103 | 0.029 | 150 | 150 | 150 |
-| claude-opus | native | 0.480 | 0.491 | 0.011 | -0.142 | 0.170 | 0.885 | n/a | 150 | 57 | 0 |
-| claude-sonnet | ur | 0.473 | 0.360 | -0.113 | -0.193 | -0.027 | 0.046 | 0.016 | 150 | 150 | 150 |
-| claude-sonnet | roman_ur | 0.473 | 0.487 | 0.013 | -0.067 | 0.093 | 0.817 | 0.871 | 150 | 150 | 150 |
-| claude-sonnet | mixed | 0.473 | 0.533 | 0.060 | 0.007 | 0.120 | 0.299 | 0.078 | 150 | 150 | 150 |
-| claude-sonnet | native | 0.473 | 0.579 | 0.106 | -0.045 | 0.256 | 0.175 | n/a | 150 | 57 | 0 |
-| gemma | ur | 0.227 | 0.220 | -0.007 | -0.053 | 0.040 | 0.890 | 1.000 | 150 | 150 | 150 |
-| gemma | roman_ur | 0.227 | 0.213 | -0.013 | -0.060 | 0.033 | 0.780 | 0.774 | 150 | 150 | 150 |
-| gemma | mixed | 0.227 | 0.240 | 0.013 | -0.027 | 0.060 | 0.785 | 0.754 | 150 | 150 | 150 |
-| gemma | native | 0.227 | 0.368 | 0.142 | -0.004 | 0.282 | 0.039 | n/a | 150 | 57 | 0 |
-| openrouter-small | ur | 0.160 | 0.100 | -0.060 | -0.127 | 0.000 | 0.122 | 0.093 | 150 | 150 | 150 |
-| openrouter-small | roman_ur | 0.160 | 0.080 | -0.080 | -0.140 | -0.020 | 0.033 | 0.017 | 150 | 150 | 150 |
-| openrouter-small | mixed | 0.160 | 0.133 | -0.027 | -0.087 | 0.033 | 0.514 | 0.523 | 150 | 150 | 150 |
-| openrouter-small | native | 0.160 | 0.228 | 0.068 | -0.057 | 0.194 | 0.254 | n/a | 150 | 57 | 0 |
+| setting | model | variant | en_rate | variant_rate | diff | paired_diff | ci_lo | ci_hi | test | p_raw | p_holm | holm_m | n_en | n_variant | n_paired |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| same | claude-haiku | ur | 0.207 | 0.347 | 0.140 | 0.140 | 0.067 | 0.220 | mcnemar_exact | 7.53e-04 | 0.011 | 15 | 150 | 150 | 150 |
+| same | claude-haiku | roman_ur | 0.207 | 0.267 | 0.060 | 0.060 | -0.007 | 0.133 | mcnemar_exact | 0.136 | 1.000 | 15 | 150 | 150 | 150 |
+| same | claude-haiku | mixed | 0.207 | 0.247 | 0.040 | 0.040 | -0.027 | 0.107 | mcnemar_exact | 0.345 | 1.000 | 15 | 150 | 150 | 150 |
+| same | claude-haiku | native | 0.207 | 0.351 | 0.144 | n/a | 0.009 | 0.283 | two_prop_z | 0.031 | 0.157 | 5 | 150 | 57 | 0 |
+| same | claude-opus | ur | 0.480 | 0.373 | -0.107 | -0.107 | -0.180 | -0.033 | mcnemar_exact | 0.011 | 0.159 | 15 | 150 | 150 | 150 |
+| same | claude-opus | roman_ur | 0.480 | 0.413 | -0.067 | -0.067 | -0.140 | 0.000 | mcnemar_exact | 0.099 | 1.000 | 15 | 150 | 150 | 150 |
+| same | claude-opus | mixed | 0.480 | 0.387 | -0.093 | -0.093 | -0.167 | -0.020 | mcnemar_exact | 0.029 | 0.375 | 15 | 150 | 150 | 150 |
+| same | claude-opus | native | 0.480 | 0.491 | 0.011 | n/a | -0.142 | 0.170 | two_prop_z | 0.885 | 1.000 | 5 | 150 | 57 | 0 |
+| same | claude-sonnet | ur | 0.487 | 0.473 | -0.013 | -0.013 | -0.080 | 0.053 | mcnemar_exact | 0.851 | 1.000 | 15 | 150 | 150 | 150 |
+| same | claude-sonnet | roman_ur | 0.487 | 0.480 | -0.007 | -0.007 | -0.073 | 0.060 | mcnemar_exact | 1.000 | 1.000 | 15 | 150 | 150 | 150 |
+| same | claude-sonnet | mixed | 0.487 | 0.500 | 0.013 | 0.013 | -0.060 | 0.087 | mcnemar_exact | 0.860 | 1.000 | 15 | 150 | 150 | 150 |
+| same | claude-sonnet | native | 0.487 | 0.596 | 0.110 | n/a | -0.046 | 0.261 | two_prop_z | 0.158 | 0.631 | 5 | 150 | 57 | 0 |
+| same | gemma | ur | 0.247 | 0.207 | -0.040 | -0.040 | -0.093 | 0.013 | mcnemar_exact | 0.210 | 1.000 | 15 | 150 | 150 | 150 |
+| same | gemma | roman_ur | 0.247 | 0.213 | -0.033 | -0.033 | -0.087 | 0.013 | mcnemar_exact | 0.302 | 1.000 | 15 | 150 | 150 | 150 |
+| same | gemma | mixed | 0.247 | 0.227 | -0.020 | -0.020 | -0.060 | 0.020 | mcnemar_exact | 0.508 | 1.000 | 15 | 150 | 150 | 150 |
+| same | gemma | native | 0.247 | 0.333 | 0.087 | n/a | -0.053 | 0.224 | two_prop_z | 0.210 | 0.631 | 5 | 150 | 57 | 0 |
+| same | openrouter-small | ur | 0.160 | 0.147 | -0.013 | -0.013 | -0.073 | 0.047 | mcnemar_exact | 0.832 | 1.000 | 15 | 150 | 150 | 150 |
+| same | openrouter-small | roman_ur | 0.160 | 0.093 | -0.067 | -0.067 | -0.127 | -0.007 | mcnemar_exact | 0.052 | 0.630 | 15 | 150 | 150 | 150 |
+| same | openrouter-small | mixed | 0.160 | 0.120 | -0.040 | -0.040 | -0.107 | 0.027 | mcnemar_exact | 0.327 | 1.000 | 15 | 150 | 150 | 150 |
+| same | openrouter-small | native | 0.160 | 0.158 | -0.002 | n/a | -0.116 | 0.108 | two_prop_z | 0.971 | 1.000 | 5 | 150 | 57 | 0 |
+| cross_en_carrier | claude-haiku | ur | 0.207 | 0.160 | -0.047 | -0.060 | -0.160 | 0.040 | mcnemar_exact | 0.453 | 1.000 | 15 | 150 | 50 | 50 |
+| cross_en_carrier | claude-haiku | roman_ur | 0.207 | 0.220 | 0.013 | 0.000 | -0.100 | 0.100 | mcnemar_exact | 1.000 | 1.000 | 15 | 150 | 50 | 50 |
+| cross_en_carrier | claude-haiku | mixed | 0.207 | 0.220 | 0.013 | 0.000 | -0.120 | 0.140 | mcnemar_exact | 1.000 | 1.000 | 15 | 150 | 50 | 50 |
+| cross_en_carrier | claude-opus | ur | 0.480 | 0.600 | 0.120 | 0.080 | -0.060 | 0.220 | mcnemar_exact | 0.388 | 1.000 | 15 | 150 | 50 | 50 |
+| cross_en_carrier | claude-opus | roman_ur | 0.480 | 0.440 | -0.040 | -0.080 | -0.220 | 0.080 | mcnemar_exact | 0.424 | 1.000 | 15 | 150 | 50 | 50 |
+| cross_en_carrier | claude-opus | mixed | 0.480 | 0.500 | 0.020 | -0.020 | -0.140 | 0.120 | mcnemar_exact | 1.000 | 1.000 | 15 | 150 | 50 | 50 |
+| cross_en_carrier | claude-sonnet | ur | 0.487 | 0.600 | 0.113 | 0.040 | -0.080 | 0.160 | mcnemar_exact | 0.754 | 1.000 | 15 | 150 | 50 | 50 |
+| cross_en_carrier | claude-sonnet | roman_ur | 0.487 | 0.560 | 0.073 | 0.000 | -0.100 | 0.100 | mcnemar_exact | 1.000 | 1.000 | 15 | 150 | 50 | 50 |
+| cross_en_carrier | claude-sonnet | mixed | 0.487 | 0.540 | 0.053 | -0.020 | -0.100 | 0.040 | mcnemar_exact | 1.000 | 1.000 | 15 | 150 | 50 | 50 |
+| cross_en_carrier | gemma | ur | 0.247 | 0.200 | -0.047 | -0.040 | -0.120 | 0.040 | mcnemar_exact | 0.625 | 1.000 | 15 | 150 | 50 | 50 |
+| cross_en_carrier | gemma | roman_ur | 0.247 | 0.220 | -0.027 | -0.020 | -0.080 | 0.040 | mcnemar_exact | 1.000 | 1.000 | 15 | 150 | 50 | 50 |
+| cross_en_carrier | gemma | mixed | 0.247 | 0.240 | -0.007 | 0.000 | -0.060 | 0.060 | mcnemar_exact | 1.000 | 1.000 | 15 | 150 | 50 | 50 |
+| cross_en_carrier | openrouter-small | ur | 0.160 | 0.140 | -0.020 | -0.020 | -0.140 | 0.100 | mcnemar_exact | 1.000 | 1.000 | 15 | 150 | 50 | 50 |
+| cross_en_carrier | openrouter-small | roman_ur | 0.160 | 0.080 | -0.080 | -0.080 | -0.180 | 0.000 | mcnemar_exact | 0.219 | 1.000 | 15 | 150 | 50 | 50 |
+| cross_en_carrier | openrouter-small | mixed | 0.160 | 0.100 | -0.060 | -0.060 | -0.160 | 0.040 | mcnemar_exact | 0.453 | 1.000 | 15 | 150 | 50 | 50 |

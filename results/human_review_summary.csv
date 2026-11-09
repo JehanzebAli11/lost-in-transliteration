@@ -1,0 +1,10 @@
+variant,kind,n,n_rated_natural,mean_natural,natural_le_3,meaning_preserved_y,meaning_preserved_n,meaning_unrated
+ur,attack,12,12,4.333333333333333,1,12,0,0
+ur,benign,8,8,4.375,1,8,0,0
+ur,all,20,20,4.35,2,20,0,0
+roman_ur,attack,12,12,4.166666666666667,1,12,0,0
+roman_ur,benign,8,8,4.75,0,8,0,0
+roman_ur,all,20,20,4.4,1,20,0,0
+mixed,attack,13,13,3.076923076923077,10,13,0,0
+mixed,benign,7,7,4.0,2,7,0,0
+mixed,all,20,20,3.4,12,20,0,0
