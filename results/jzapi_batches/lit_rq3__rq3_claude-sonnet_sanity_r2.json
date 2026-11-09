@@ -1,0 +1,24 @@
+{
+  "actual_cost_usd": 0.03624,
+  "batch_id": "msgbatch_013rEwQnWBRVBvXjCrDyoUTT",
+  "created_utc": "2026-11-09T15:28:29Z",
+  "job": "lit_rq3",
+  "logged_utc": "2026-11-09T15:31:33Z",
+  "model_ids": [
+    "claude-sonnet-5-5"
+  ],
+  "n_requests": 20,
+  "name": "rq3_claude-sonnet_sanity_r2",
+  "processing_status": "ended",
+  "repo": "lost-in-transliteration",
+  "request_counts": {
+    "canceled": 0,
+    "errored": 0,
+    "expired": 0,
+    "processing": 0,
+    "succeeded": 20
+  },
+  "requests_sha256": "91a4176365299b377cdce3918665e09d28bf2621440651cb242ce6917425d759",
+  "status": "logged",
+  "worst_case_usd": 0.067251
+}

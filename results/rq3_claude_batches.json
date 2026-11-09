@@ -63,5 +63,40 @@
       "max_tokens": 1024
     },
     "collected": "2026-11-09T20:07:54+05:00"
+  },
+  "rq3_claude-sonnet_sanity_r2": {
+    "model": "claude-sonnet",
+    "batch_id": "msgbatch_013rEwQnWBRVBvXjCrDyoUTT",
+    "n_requests": 20,
+    "submitted": "2026-11-09T20:28:30+05:00",
+    "lit_spend_recorded": true,
+    "worst_case_offline_usd": 0.067251,
+    "max_tokens": 400,
+    "extra": {
+      "thinking": {
+        "type": "between_tools"
+      }
+    },
+    "lit_spend_usd": 0.03624,
+    "stats": {
+      "model": "claude-sonnet",
+      "batch": "rq3_claude-sonnet_sanity_r2",
+      "results": {
+        "succeeded": 20
+      },
+      "stop_reasons": {
+        "end_turn": 17,
+        "max_tokens": 3
+      },
+      "at_max_tokens_share": 0.15,
+      "empty_at_max_tokens": 0,
+      "new_rows": 20,
+      "superseded_rows": 20,
+      "unmatched": 0,
+      "output_tokens_median": 266.5,
+      "output_tokens_max": 400,
+      "max_tokens": 400
+    },
+    "collected": "2026-11-09T20:31:33+05:00"
   }
 }

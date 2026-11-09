@@ -1,8 +1,8 @@
 {
   "max_usd": 40.0,
   "stop_fraction": 0.95,
-  "total_usd": 1.01272121,
-  "calls": 8377,
+  "total_usd": 1.04896121,
+  "calls": 8397,
   "cached_calls": 124,
   "by_model": {
     "google/gemma-4-31b-it": {
@@ -30,10 +30,10 @@
       "usd": 0.35977125
     },
     "claude-sonnet-5-5": {
-      "calls": 20,
-      "input_tokens": 9265,
-      "output_tokens": 3951,
-      "usd": 0.02902
+      "calls": 40,
+      "input_tokens": 18530,
+      "output_tokens": 9346,
+      "usd": 0.06526
     },
     "claude-opus-5-5": {
       "calls": 20,
@@ -56,13 +56,13 @@
       "usd": 0.04183686
     },
     "eval_models": {
-      "calls": 5602,
-      "usd": 0.83104875
+      "calls": 5622,
+      "usd": 0.86728875
     },
     "mcp": {
       "calls": 124,
       "usd": 0.0059756
     }
   },
-  "updated": "2026-11-09T20:07:54+05:00"
+  "updated": "2026-11-09T20:31:33+05:00"
 }
