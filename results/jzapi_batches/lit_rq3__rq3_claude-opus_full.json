@@ -1,0 +1,24 @@
+{
+  "actual_cost_usd": 3.178464,
+  "batch_id": "msgbatch_01MCDtcw1DH8hXPivZUoW3Z9",
+  "created_utc": "2026-11-09T15:39:37Z",
+  "job": "lit_rq3",
+  "logged_utc": "2026-11-09T15:43:49Z",
+  "model_ids": [
+    "claude-opus-5-5"
+  ],
+  "n_requests": 907,
+  "name": "rq3_claude-opus_full",
+  "processing_status": "ended",
+  "repo": "lost-in-transliteration",
+  "request_counts": {
+    "canceled": 0,
+    "errored": 0,
+    "expired": 0,
+    "processing": 0,
+    "succeeded": 907
+  },
+  "requests_sha256": "c91679d10460b39b2c027f40a1841688ac1fd2cf9b486784738b8889d874f56e",
+  "status": "logged",
+  "worst_case_usd": 11.588614
+}
