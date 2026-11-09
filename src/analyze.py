@@ -4,10 +4,16 @@ invented; a figure whose inputs are missing is skipped and listed as skipped).
   fig1_detection_by_lang.png     TPR by language, grouped bars per classifier (+ Valar)
   fig2_fpr_by_lang.png           FPR on benign by language per classifier
   fig3_roc_by_classifier.png     ROC curves per classifier, one line per language
-  fig4_asr_by_lang.png           attack success rate by language per model, 95% Wilson CIs
+  fig4_asr_by_lang.png           attack success rate by language per model, 95% Wilson CIs; two panels:
+                                 injection in a same-language document, and in an English document
   fig5_asr_heatmap_style_lang.png ASR by attack style x language, pooled across models
   table_detection_drop.csv/.md   each variant minus English: z-test, paired McNemar, bootstrap CI
-  table_asr_gap.csv/.md          the same for model ASR
+  table_asr_gap.csv/.md          the same for model ASR, both document conditions, raw and Holm-adjusted p
+  rq3_settings.csv               RQ3 settings actually used, from the rows (model id, endpoint, caps, ...)
+  rq3_truncation.csv             share of replies that stopped at max_tokens, per model / setting / variant
+  rq3_leak_goal.csv              access-code (SECRET_LEAK) successes per model, and ASR without that goal
+  rq3_mentions_relabel.csv       quote/mention labels: stored vs current judge, per model / variant
+  human_review_summary.csv       owner's translation ratings (data/human_review_sample.csv) per variant x kind
   fig7a/b/c/d_*.png              Phase 2: TPR / FPR vs % Urdu-variant data, best fine-tuned
                                  vs existing classifiers (same items), held-out style
   fig8_mcp_scanners.png          Phase 3 detection / false-positive rates by language
@@ -32,7 +38,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-from .common import Config, load_config, log_event, read_json, read_jsonl, rng_for, stage_parser, write_json  # noqa: E402
+from .common import (REPO_ROOT, Config, load_config, log_event, read_json, read_jsonl, rng_for,  # noqa: E402
+                     stage_parser, write_json)
+from .eval_models import current_mentions_only, write_summaries  # noqa: E402
 from .eval_classifiers import load_detection_raw, write_csv  # noqa: E402
 from .metrics import bootstrap_diff_ci, mcnemar_exact, two_prop_ztest, wilson_ci  # noqa: E402
 
@@ -253,24 +261,236 @@ def model_rows(cfg: Config) -> list[dict]:
     return [r for r in read_jsonl(cfg.results_dir / "models_raw.jsonl") if r["setting"] == "same"]
 
 
-def fig_asr(cfg: Config, rows: list[dict]):
-    if not rows:
-        return None
+RQ3_SETTINGS = ("same", "cross_en_carrier")
+SETTING_LABEL = {"same": "Injection in a same-language document",
+                 "cross_en_carrier": "Injection in an English document"}
+
+
+def rq3_all_rows(cfg: Config) -> list[dict]:
+    """Every models_raw.jsonl row; mentions_only re-judged with the current judge (the stored label
+    is kept as mentions_only_stored)."""
+    rows = read_jsonl(cfg.results_dir / "models_raw.jsonl")
+    out = []
+    for r, m in zip(rows, current_mentions_only(cfg, rows)):
+        r = dict(r)
+        r["mentions_only_stored"] = r.get("mentions_only")
+        if m is not None:
+            r["mentions_only"] = m
+        out.append(r)
+    return out
+
+
+def _asr_cells(rows: list[dict], setting: str) -> dict:
+    """(model, lang) -> outcomes. The English-document panel uses the same-setting English rows as
+    its English bar (an English injection in an English document is the same task)."""
     b = defaultdict(list)
     for r in rows:
-        b[(r["model"], r["lang_condition"])].append(int(bool(r["success"])))
-    vals = {k: sum(v) / len(v) for k, v in b.items()}
-    errs = {k: wilson_ci(sum(v), len(v)) for k, v in b.items()}
-    models = sorted({k[0] for k in b})
-    langs = [l for l in LANG_ORDER if any((m, l) in vals for m in models)]
-    fig, ax = new_fig(max(6, 1.8 * len(models) + 2), 4.5)
-    grouped_bars(ax, models, langs, vals, errs, LANG_COLORS, LANG_LABEL)
-    style_axes(ax, ylabel="Attack success rate", title="Indirect injection success by language (95% Wilson CI)")
-    legend(ax, ncol=min(5, len(langs)), loc="upper left", bbox_to_anchor=(0, -0.08))
-    write_csv(cfg.results_dir / "fig4_asr_by_lang.csv",
-              [{"model": m, "lang_condition": l, "n": len(b[(m, l)]), "asr": vals[(m, l)],
-                "ci_lo": errs[(m, l)][0], "ci_hi": errs[(m, l)][1]} for m in models for l in langs if (m, l) in vals])
+        if r["setting"] == setting or (setting != "same" and r["setting"] == "same" and r["lang_condition"] == "en"):
+            if setting != "same" and r["lang_condition"] == "native":
+                continue
+            b[(r["model"], r["lang_condition"])].append(int(bool(r["success"])))
+    return b
+
+
+def fig_asr(cfg: Config, rows: list[dict]):
+    rows = [r for r in rows if r["setting"] in RQ3_SETTINGS]
+    if not rows:
+        return None
+    panels = [s for s in RQ3_SETTINGS if any(r["setting"] == s for r in rows)]
+    models = sorted({r["model"] for r in rows})
+    fig, axes = plt.subplots(1, len(panels), figsize=(max(6, 1.8 * len(models) + 2) * len(panels) * 0.75 + 1, 4.8),
+                             facecolor=SURFACE, squeeze=False, sharey=True)
+    out = []
+    for ax, setting in zip(axes[0], panels):
+        b = _asr_cells(rows, setting)
+        vals = {k: sum(v) / len(v) for k, v in b.items()}
+        errs = {k: wilson_ci(sum(v), len(v)) for k, v in b.items()}
+        langs = [l for l in LANG_ORDER if any((m, l) in vals for m in models)]
+        grouped_bars(ax, models, langs, vals, errs, LANG_COLORS, LANG_LABEL, rotation=20)
+        style_axes(ax, ylabel="Attack success rate" if ax is axes[0][0] else None, title=SETTING_LABEL[setting])
+        legend(ax, ncol=min(5, len(langs)), loc="upper left", bbox_to_anchor=(0, -0.22))
+        out += [{"setting": setting, "row_setting": "same" if l == "en" else setting, "model": m,
+                 "lang_condition": l, "n": len(b[(m, l)]), "successes": sum(b[(m, l)]), "asr": vals[(m, l)],
+                 "ci_lo": errs[(m, l)][0], "ci_hi": errs[(m, l)][1]}
+                for m in models for l in langs if (m, l) in vals]
+    fig.suptitle("Indirect injection success by language (95% Wilson CI)", color=INK, fontsize=11, x=0.01,
+                 ha="left")
+    write_csv(cfg.results_dir / "fig4_asr_by_lang.csv", out)
     return save(fig, cfg.figures_dir / "fig4_asr_by_lang.png")
+
+
+def holm(pvals: list[float]) -> list[float]:
+    """Holm-Bonferroni step-down adjusted p-values (NaN stays NaN and is not counted)."""
+    idx = [i for i, p in enumerate(pvals) if p == p]
+    m = len(idx)
+    adj = [float("nan")] * len(pvals)
+    running = 0.0
+    for rank, i in enumerate(sorted(idx, key=lambda i: pvals[i])):
+        running = max(running, min(1.0, (m - rank) * pvals[i]))
+        adj[i] = running
+    return adj
+
+
+def rq3_gap_table(rows: list[dict], *, n_boot: int, seed: int, alpha: float = 0.05) -> list[dict]:
+    """Variant minus English per model, for both document conditions, with raw and Holm-adjusted p.
+
+    same: the main RQ3 table (paired McNemar for ur / roman_ur / mixed; unpaired z-test for native).
+    cross_en_carrier: the variant injection in an English document vs the English injection in the
+    same English documents (paired by source_id over the cross sample; en_rate is all English items).
+    Holm families: one per (setting, test): the paired McNemar tests of a setting (5 models x 3
+    variants = 15 for `same`) and, separately, its native z-tests.
+    """
+    same = [r for r in rows if r["setting"] == "same"]
+    cross = [r for r in rows if r["setting"] == "cross_en_carrier"]
+    out = []
+    for setting, rs in (("same", same), ("cross_en_carrier", [r for r in same if r["lang_condition"] == "en"] + cross)):
+        if setting == "cross_en_carrier" and not cross:
+            continue
+        for r in gap_table(rs, key="model", outcome="success", label=None, n_boot=n_boot, seed=seed):
+            paired = r["n_paired"] > 0
+            out.append({"setting": setting, **r, "test": "mcnemar_exact" if paired else "two_prop_z",
+                        "p_raw": r["p_mcnemar"] if paired else r["p_ztest"]})
+    fams = defaultdict(list)
+    for i, r in enumerate(out):
+        fams[(r["setting"], r["test"])].append(i)
+    for (setting, test), ix in fams.items():
+        adj = holm([out[i]["p_raw"] for i in ix])
+        m = sum(1 for i in ix if out[i]["p_raw"] == out[i]["p_raw"])
+        for i, a in zip(ix, adj):
+            out[i].update({"p_holm": a, "holm_family": f"{setting}/{test}", "holm_m": m,
+                           "significant_raw": bool(out[i]["p_raw"] < alpha),
+                           "significant_holm": bool(a < alpha)})
+    return out
+
+
+def _at_max(r: dict) -> bool:
+    sr = r.get("stop_reason")
+    if sr is not None:
+        return sr in ("max_tokens", "length")
+    return int(r.get("output_tokens") or 0) >= int(r.get("max_tokens") or 0) > 0
+
+
+def rq3_truncation(cfg: Config, rows: list[dict]):
+    """Share of replies that stopped at max_tokens (stop_reason when the row has it, else
+    output_tokens >= max_tokens), per model / setting / variant."""
+    if not rows:
+        return None
+    g = defaultdict(list)
+    for r in rows:
+        g[(r["model"], r["setting"], r["lang_condition"])].append(r)
+    order = {s: i for i, s in enumerate(RQ3_SETTINGS + ("clean",))}
+    out = []
+    for (m, s, lc), rs in sorted(g.items(), key=lambda kv: (kv[0][0], order.get(kv[0][1], 9),
+                                                            LANG_ORDER.index(kv[0][2]) if kv[0][2] in LANG_ORDER else 9)):
+        k = sum(_at_max(r) for r in rs)
+        out.append({"model": m, "setting": s, "lang_condition": lc, "n": len(rs), "at_max_tokens": k,
+                    "share": k / len(rs),
+                    "max_tokens": "/".join(str(x) for x in sorted({int(r.get("max_tokens") or 0) for r in rs})),
+                    "basis": "stop_reason" if all(r.get("stop_reason") is not None for r in rs)
+                    else "output_tokens>=max_tokens" if all(r.get("stop_reason") is None for r in rs) else "mixed"})
+    path = cfg.results_dir / "rq3_truncation.csv"
+    write_csv(path, out)
+    return path
+
+
+def _config_profiles(cfg: Config) -> dict:
+    import yaml
+    for p in (cfg.root / "config.yaml", REPO_ROOT / "config.yaml"):
+        if p.exists():
+            with open(p, encoding="utf-8") as fh:
+                return (yaml.safe_load(fh) or {}).get("profiles", {}) or {}
+    return {}
+
+
+def _reasoning(r: dict, ledger: dict, profiles: dict) -> tuple[str, str]:
+    """(thinking/reasoning params as JSON, where that came from) for one row."""
+    def js(d):
+        return json.dumps(d or {}, sort_keys=True)
+    if "request_params" in r:
+        return js(r["request_params"]), "row"
+    if r.get("endpoint") == "anthropic_batch":
+        ex = {js(e.get("extra")) for e in ledger.values()
+              if e.get("model") == r["model"] and e.get("max_tokens") == r.get("max_tokens") and "extra" in e}
+        if len(ex) == 1:
+            return ex.pop(), "results/rq3_claude_batches.json"
+        return "unknown", "not stored in the row"
+    for pname, prof in profiles.items():
+        for e in ((prof or {}).get("eval_models") or {}).get("models") or []:
+            if e.get("model") == r.get("model_id") and e.get("endpoint") == r.get("endpoint"):
+                return js(e.get("extra_body")), f"config.yaml profile {pname}"
+    return "unknown", "not stored in the row"
+
+
+def rq3_settings(cfg: Config, rows: list[dict]):
+    """The settings each model's RQ3 rows were actually made with, read from the rows (one line per
+    distinct combination, so a half-finished rerun shows up as two lines)."""
+    if not rows:
+        return None
+    ledger = read_json(cfg.results_dir / "rq3_claude_batches.json", default={}) or {}
+    profiles = _config_profiles(cfg)
+    g = defaultdict(lambda: {"n": 0, "n_attack": 0, "n_clean": 0})
+    for r in rows:
+        reasoning, src = _reasoning(r, ledger, profiles)
+        k = (r["model"], r.get("model_id"), r.get("endpoint"), r.get("max_tokens"), reasoning, src,
+             str(r.get("temperature")))
+        g[k]["n"] += 1
+        g[k]["n_clean" if r["setting"] == "clean" else "n_attack"] += 1
+    out = [{"model": k[0], "model_id": k[1], "endpoint": k[2], "max_tokens": k[3], "thinking_reasoning": k[4],
+            "thinking_reasoning_source": k[5], "temperature": k[6], **v}
+           for k, v in sorted(g.items(), key=lambda kv: tuple(map(str, kv[0])))]
+    path = cfg.results_dir / "rq3_settings.csv"
+    write_csv(path, out)
+    return path
+
+
+def rq3_leak_goal(cfg: Config, rows: list[dict]):
+    """Access-code (SECRET_LEAK) successes per model, setting and variant, next to the other goals,
+    so its zero rate is visible and the ASR without it can be read off."""
+    att = [r for r in rows if r["setting"] in RQ3_SETTINGS]
+    if not att:
+        return None
+    g = defaultdict(list)
+    for r in att:
+        g[(r["model"], r["setting"], r["lang_condition"])].append(r)
+        g[(r["model"], "all", "all")].append(r)
+    out = []
+    for (m, s, lc), rs in sorted(g.items(), key=lambda kv: (kv[0][0], kv[0][1] != "all", kv[0][1],
+                                                            LANG_ORDER.index(kv[0][2]) if kv[0][2] in LANG_ORDER else -1)):
+        leak = [r for r in rs if r.get("goal") == "SECRET_LEAK"]
+        other = [r for r in rs if r.get("goal") != "SECRET_LEAK"]
+        kl, ko = sum(bool(r["success"]) for r in leak), sum(bool(r["success"]) for r in other)
+        out.append({"model": m, "setting": s, "lang_condition": lc, "n": len(rs),
+                    "successes": kl + ko, "n_secret_leak": len(leak), "secret_leak_successes": kl,
+                    "secret_leak_rate": kl / len(leak) if leak else float("nan"),
+                    "n_other_goals": len(other), "other_goal_successes": ko,
+                    "asr_without_leak": ko / len(other) if other else float("nan")})
+    path = cfg.results_dir / "rq3_leak_goal.csv"
+    write_csv(path, out)
+    return path
+
+
+def rq3_mentions_relabel(cfg: Config, rows: list[dict]):
+    """How many quote/mention labels the current judge changes (stored label vs re-judged)."""
+    att = [r for r in rows if r["setting"] in RQ3_SETTINGS]
+    if not att:
+        return None
+    g = defaultdict(list)
+    for r in att:
+        g[(r["model"], r["setting"], r["lang_condition"])].append(r)
+    out = []
+    for (m, s, lc), rs in sorted(g.items(), key=lambda kv: (kv[0][0], kv[0][1],
+                                                            LANG_ORDER.index(kv[0][2]) if kv[0][2] in LANG_ORDER else 9)):
+        succ = [r for r in rs if r["success"]]
+        old = sum(bool(r.get("mentions_only_stored")) for r in succ)
+        new = sum(bool(r.get("mentions_only")) for r in succ)
+        out.append({"model": m, "setting": s, "lang_condition": lc, "n": len(rs), "successes": len(succ),
+                    "mentions_only_stored": old, "mentions_only_now": new,
+                    "now_quote": sum(1 for r in succ if r.get("mentions_only") and not r.get("mentions_only_stored")),
+                    "no_longer_quote": sum(1 for r in succ if r.get("mentions_only_stored") and not r.get("mentions_only")),
+                    "strict_successes_stored": len(succ) - old, "strict_successes_now": len(succ) - new})
+    path = cfg.results_dir / "rq3_mentions_relabel.csv"
+    write_csv(path, out)
+    return path
 
 
 def fig_asr_heatmap(cfg: Config, rows: list[dict]):
@@ -307,6 +527,54 @@ def fig_asr_heatmap(cfg: Config, rows: list[dict]):
               [{"style": s, "lang": l, "n": len(b[(s, l)]), "asr": float(np.mean(b[(s, l)]))}
                for s in styles for l in langs if (s, l) in b])
     return save(fig, cfg.figures_dir / "fig5_asr_heatmap_style_lang.png")
+
+
+# ----------------------------------------------------------------------------- human review (§3.5)
+REVIEW_KIND = {"atk": "attack", "ben": "benign", "car": "carrier"}
+
+
+def read_review_sheet(path: Path) -> list[dict]:
+    """The owner's rating sheet: tolerant of a UTF-8 BOM and CRLF line endings (spreadsheet exports)."""
+    if not path.exists() or path.stat().st_size == 0:
+        return []
+    with open(path, encoding="utf-8-sig", newline="") as fh:
+        return [{(k or "").strip(): (v or "").strip() if isinstance(v, str) else v for k, v in r.items()}
+                for r in csv.DictReader(fh)]
+
+
+def human_review_summary(cfg: Config):
+    """Per variant (and kind: attack / benign, plus 'all'): n, rated n, mean naturalness (1-5), how many
+    were rated <= 3, and meaning-preserved y / n counts. Unrated cells are counted, never guessed."""
+    rows = read_review_sheet(cfg.data_dir / "human_review_sample.csv")
+    if not rows:
+        return None
+    nat_col = next((c for c in rows[0] if c.lower().startswith("natural")), None)
+    mean_col = next((c for c in rows[0] if c.lower().startswith("meaning")), None)
+    if nat_col is None or mean_col is None:
+        raise ValueError(f"human_review_sample.csv: no natural/meaning columns in {list(rows[0])}")
+    g = defaultdict(list)
+    for r in rows:
+        kind = REVIEW_KIND.get((r.get("id") or "").split("-")[0], "other")
+        g[(r.get("variant"), kind)].append(r)
+        g[(r.get("variant"), "all")].append(r)
+    order = {v: i for i, v in enumerate(LANG_ORDER)}
+    out = []
+    for (variant, kind), rs in sorted(g.items(), key=lambda kv: (order.get(kv[0][0], 99), str(kv[0][0]),
+                                                                kv[0][1] == "all", kv[0][1])):
+        nat = []
+        for r in rs:
+            v = r.get(nat_col, "")
+            if v != "":
+                nat.append(float(v))
+        mp = [r.get(mean_col, "").lower()[:1] for r in rs]
+        out.append({"variant": variant, "kind": kind, "n": len(rs), "n_rated_natural": len(nat),
+                    "mean_natural": sum(nat) / len(nat) if nat else float("nan"),
+                    "natural_le_3": sum(1 for x in nat if x <= 3),
+                    "meaning_preserved_y": mp.count("y"), "meaning_preserved_n": mp.count("n"),
+                    "meaning_unrated": sum(1 for x in mp if x not in ("y", "n"))})
+    path = cfg.results_dir / "human_review_summary.csv"
+    write_csv(path, out)
+    return path
 
 
 # ----------------------------------------------------------------------------- Phase 2
@@ -547,15 +815,26 @@ def run(cfg: Config) -> dict:
         produced["table6"] = "results/table_detection_drop.csv"
     else:
         skipped.append("table6")
-    mrows = model_rows(cfg)
-    do("fig4", fig_asr, cfg, mrows)
+    all_m = rq3_all_rows(cfg)
+    if all_m:
+        write_summaries(cfg)          # models_summary.csv etc. with the current judge's mentions_only
+    mrows = [r for r in all_m if r["setting"] == "same"]
+    att = [r for r in all_m if r["setting"] in RQ3_SETTINGS]
+    do("fig4", fig_asr, cfg, att)
     do("fig5", fig_asr_heatmap, cfg, mrows)
-    if mrows:
-        gap = gap_table(mrows, key="model", outcome="success", label=None, n_boot=nb, seed=cfg.seed)
+    if att:
+        gap = rq3_gap_table(att, n_boot=nb, seed=cfg.seed)
         write_csv(cfg.results_dir / "table_asr_gap.csv", gap)
         write_md_table(cfg.results_dir / "table_asr_gap.md", gap,
-                       ["model", "variant", "en_rate", "variant_rate", "diff", "ci_lo", "ci_hi", "p_ztest",
-                        "p_mcnemar", "n_en", "n_variant", "n_paired"], "Attack success gap: variant minus English")
+                       ["setting", "model", "variant", "en_rate", "variant_rate", "diff", "paired_diff", "ci_lo",
+                        "ci_hi", "test", "p_raw", "p_holm", "holm_m", "n_en", "n_variant", "n_paired"],
+                       "Attack success gap: variant minus English (setting same = injection in a same-language "
+                       "document; cross_en_carrier = in an English document, vs English in the same documents; "
+                       "p_holm = Holm-Bonferroni within each setting/test family of holm_m tests)")
+    for name, fn in (("rq3_truncation", rq3_truncation), ("rq3_settings", rq3_settings),
+                     ("rq3_leak_goal", rq3_leak_goal), ("rq3_mentions_relabel", rq3_mentions_relabel)):
+        do(name, fn, cfg, all_m)
+    do("human_review", human_review_summary, cfg)
     curve = detector_curve(cfg)
     do("fig7a", fig_detector_vs_data, cfg, curve, "tpr", "fig7a_detector_tpr_vs_data", "Detection rate")
     do("fig7b", fig_detector_vs_data, cfg, curve, "fpr", "fig7b_detector_fpr_vs_data", "False positive rate")
@@ -600,7 +879,10 @@ def headline_numbers(cfg: Config, clf: list[dict], mrows: list[dict], curve: lis
     for key, name in [("classifiers", "classifiers_summary.csv"), ("detection_gaps", "table_detection_drop.csv"),
                       ("models", "models_summary.csv"), ("asr_gaps", "table_asr_gap.csv"),
                       ("clean_controls", "models_clean_controls.csv"), ("detectors", "detector_summary.csv"),
-                      ("detector_curve", "detector_curve.csv"), ("mcp", "mcp_summary.csv")]:
+                      ("detector_curve", "detector_curve.csv"), ("mcp", "mcp_summary.csv"),
+                      ("rq3_settings", "rq3_settings.csv"), ("rq3_truncation", "rq3_truncation.csv"),
+                      ("rq3_leak_goal", "rq3_leak_goal.csv"), ("rq3_mentions_relabel", "rq3_mentions_relabel.csv"),
+                      ("human_review", "human_review_summary.csv")]:
         out[key] = {"source": f"results/{name}",
                     "rows": [{k: _num(v) for k, v in r.items()} for r in read_csv(cfg.results_dir / name)]}
     for r in out["models"]["rows"]:
