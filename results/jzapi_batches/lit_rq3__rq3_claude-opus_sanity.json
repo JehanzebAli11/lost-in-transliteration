@@ -1,0 +1,24 @@
+{
+  "actual_cost_usd": 0.07049,
+  "batch_id": "msgbatch_0152YSF6W4ZJt6NbDWmffmw3",
+  "created_utc": "2026-11-09T15:04:49Z",
+  "job": "lit_rq3",
+  "logged_utc": "2026-11-09T15:07:54Z",
+  "model_ids": [
+    "claude-opus-5-5"
+  ],
+  "n_requests": 20,
+  "name": "rq3_claude-opus_sanity",
+  "processing_status": "ended",
+  "repo": "lost-in-transliteration",
+  "request_counts": {
+    "canceled": 0,
+    "errored": 0,
+    "expired": 0,
+    "processing": 0,
+    "succeeded": 20
+  },
+  "requests_sha256": "b040114dafe8f16e7b2e2a8d0a2998c15375077ccc4362e7fc7474c2e41cab63",
+  "status": "logged",
+  "worst_case_usd": 0.259302
+}
