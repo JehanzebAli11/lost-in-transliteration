@@ -167,5 +167,73 @@
       "max_tokens": 1024
     },
     "collected": "2026-11-09T20:43:51+05:00"
+  },
+  "rq3_claude-sonnet_sanity_r3": {
+    "model": "claude-sonnet",
+    "batch_id": "msgbatch_01R1NdPxMgBthG5Znd1K1Pnu",
+    "n_requests": 20,
+    "submitted": "2026-11-09T21:32:45+05:00",
+    "lit_spend_recorded": true,
+    "worst_case_offline_usd": 0.129651,
+    "max_tokens": 1024,
+    "extra": {
+      "thinking": {
+        "type": "between_tools"
+      }
+    },
+    "lit_spend_usd": 0.037055,
+    "stats": {
+      "model": "claude-sonnet",
+      "batch": "rq3_claude-sonnet_sanity_r3",
+      "results": {
+        "succeeded": 20
+      },
+      "stop_reasons": {
+        "end_turn": 20
+      },
+      "at_max_tokens_share": 0.0,
+      "empty_at_max_tokens": 0,
+      "new_rows": 20,
+      "superseded_rows": 20,
+      "unmatched": 0,
+      "output_tokens_median": 244.5,
+      "output_tokens_max": 503,
+      "max_tokens": 1024
+    },
+    "collected": "2026-11-09T21:35:50+05:00"
+  },
+  "rq3_claude-haiku_sanity_r3": {
+    "model": "claude-haiku",
+    "batch_id": "msgbatch_014jzjQpbNaLQJqwqdfBqBhK",
+    "n_requests": 20,
+    "submitted": "2026-11-09T21:32:46+05:00",
+    "lit_spend_recorded": true,
+    "worst_case_offline_usd": 0.006483,
+    "max_tokens": 1024,
+    "extra": {
+      "thinking": {
+        "type": "disabled"
+      }
+    },
+    "lit_spend_usd": 0.001229,
+    "stats": {
+      "model": "claude-haiku",
+      "batch": "rq3_claude-haiku_sanity_r3",
+      "results": {
+        "succeeded": 20
+      },
+      "stop_reasons": {
+        "end_turn": 20
+      },
+      "at_max_tokens_share": 0.0,
+      "empty_at_max_tokens": 0,
+      "new_rows": 20,
+      "superseded_rows": 20,
+      "unmatched": 0,
+      "output_tokens_median": 169.0,
+      "output_tokens_max": 389,
+      "max_tokens": 1024
+    },
+    "collected": "2026-11-09T21:35:51+05:00"
   }
 }

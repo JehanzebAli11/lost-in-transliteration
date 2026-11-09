@@ -1,0 +1,24 @@
+{
+  "actual_cost_usd": 0.001229,
+  "batch_id": "msgbatch_014jzjQpbNaLQJqwqdfBqBhK",
+  "created_utc": "2026-11-09T16:32:46Z",
+  "job": "lit_rq3",
+  "logged_utc": "2026-11-09T16:35:51Z",
+  "model_ids": [
+    "claude-haiku-5-5"
+  ],
+  "n_requests": 20,
+  "name": "rq3_claude-haiku_sanity_r3",
+  "processing_status": "ended",
+  "repo": "lost-in-transliteration",
+  "request_counts": {
+    "canceled": 0,
+    "errored": 0,
+    "expired": 0,
+    "processing": 0,
+    "succeeded": 20
+  },
+  "requests_sha256": "5e0a9e910542f1af3dce06a674a4f400b95d866eb5ce04059a14309a4fd2826c",
+  "status": "logged",
+  "worst_case_usd": 0.006483
+}
