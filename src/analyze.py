@@ -86,7 +86,7 @@ def legend(ax, **kw):
 
 
 def grouped_bars(ax, groups: list[str], series: list[str], values: dict, errs: dict | None = None,
-                 colors: dict | None = None, labels: dict | None = None):
+                 colors: dict | None = None, labels: dict | None = None, rotation: int = 0):
     """values[(group, series)] -> float; errs -> (lo, hi)."""
     n = len(series)
     width = 0.8 / max(1, n)
@@ -107,7 +107,8 @@ def grouped_bars(ax, groups: list[str], series: list[str], values: dict, errs: d
         if all(np.isnan(values.get((g, s), np.nan)) for s in series):
             ax.text(x[i], 0.04, "n/a", ha="center", va="bottom", color=MUTED, fontsize=9)
     ax.set_xticks(x)
-    ax.set_xticklabels(groups, rotation=0, fontsize=9, color=INK2)
+    ax.set_xticklabels(groups, rotation=rotation, ha="right" if rotation else "center", fontsize=9, color=INK2,
+                       rotation_mode="anchor" if rotation else "default")
 
 
 def read_csv(path: Path) -> list[dict]:
@@ -343,29 +344,48 @@ def fig_detector_vs_data(cfg: Config, curve: list[dict], metric: str, name: str,
     return save(fig, cfg.figures_dir / f"{name}.png")
 
 
-def best_detector(curve: list[dict]) -> tuple[str, int] | None:
-    """Base model + condition with the best mean AUC on the test split across languages."""
+def _test_auc_scores(curve: list[dict]) -> dict:
     scores = defaultdict(list)
     for r in curve:
         if r["group_set"] == "test" and f(r["auc_mean"]) == f(r["auc_mean"]):
             scores[(r["base"], int(f(r["pct"])))].append(f(r["auc_mean"]))
+    return scores
+
+
+def best_detector(curve: list[dict]) -> tuple[str, int] | None:
+    """Base model + condition with the best mean AUC on the test split across languages."""
+    scores = _test_auc_scores(curve)
     if not scores:
         return None
     return max(scores, key=lambda k: (np.mean(scores[k]), k[1]))
 
 
+def best_per_base(curve: list[dict]) -> list[tuple[str, int]]:
+    """The same rule within each base model, so a base that fits the test templates best cannot hide
+    another base that generalises better to the held-out style and native sets."""
+    scores = _test_auc_scores(curve)
+    best: dict[str, tuple[str, int]] = {}
+    for k in scores:
+        if k[0] not in best or (np.mean(scores[k]), k[1]) > (np.mean(scores[best[k[0]]]), best[k[0]][1]):
+            best[k[0]] = k
+    return [best[b] for b in sorted(best)]
+
+
 def fig_detector_vs_classifiers(cfg: Config, curve: list[dict], clf_rows: list[dict], group_set: str,
                                 name: str, title: str):
-    best = best_detector(curve)
-    if best is None:
+    picks = best_per_base(curve)
+    if not picks:
         return None
-    base, pct = best
-    d_rows = []
-    for p in sorted((cfg.results_dir / "detector").glob("*.jsonl")):
-        rs = read_jsonl(p)
-        if rs and rs[0]["base"] == base and rs[0]["pct"] == pct:
-            d_rows += rs
-    if not d_rows:
+    runs = []  # (label, rows) per picked base; seeds of one condition are pooled
+    for base, pct in picks:
+        rows = []
+        for p in sorted((cfg.results_dir / "detector").glob("*.jsonl")):
+            rs = read_jsonl(p)
+            if rs and rs[0]["base"] == base and rs[0]["pct"] == pct:
+                rows += rs
+        if rows:
+            runs.append((f"fine-tuned {base} (+{pct}%)", rows))
+    if not runs:
         return None
 
     def in_set(r):
@@ -374,33 +394,33 @@ def fig_detector_vs_classifiers(cfg: Config, curve: list[dict], clf_rows: list[d
         if r["condition"] == "native":
             return False
         return r["split"] == group_set or (r["label"] == 0 and r["split"] == "test")
-    d_rows = [r for r in d_rows if in_set(r)]
-    det_ids = {r["item_id"] for r in d_rows}
+    runs = [(label, [r for r in rows if in_set(r)]) for label, rows in runs]
+    det_ids = {r["item_id"] for _, rows in runs for r in rows}
     # classifiers on exactly the same item ids
     c_rows = [r for r in clf_rows if r["item_id"] in det_ids]
-    label = f"fine-tuned {base} (+{pct}%)"
     vals, errs = {}, {}
     rows_out = []
-    for sys_name, rs in [(label, d_rows)] + sorted(
+    for sys_name, rs in runs + sorted(
             ((s, [r for r in c_rows if r["system"] == s]) for s in {r["system"] for r in c_rows})):
-        by_lang = defaultdict(list)
+        pos, neg = defaultdict(list), defaultdict(list)
         for r in rs:
-            if r["label"] == 1:
-                by_lang[r["lang_condition"] if group_set != "native" else "native"].append(r["decision"])
-        # seeds of the fine-tuned model are pooled
-        for lang, ds in by_lang.items():
+            lang = r["lang_condition"] if group_set != "native" else "native"
+            (pos if r["label"] == 1 else neg)[lang].append(r["decision"])
+        for lang, ds in pos.items():
             vals[(sys_name, lang)] = sum(ds) / len(ds)
             errs[(sys_name, lang)] = wilson_ci(sum(ds), len(ds))
+            nb = neg.get(lang, [])
             rows_out.append({"system": sys_name, "set": group_set, "lang_condition": lang, "n": len(ds),
-                             "tpr": vals[(sys_name, lang)]})
-    systems = [label] + sorted({r["system"] for r in c_rows})
+                             "tp": sum(ds), "tpr": vals[(sys_name, lang)], "n_benign": len(nb),
+                             "fp": sum(nb), "fpr": sum(nb) / len(nb) if nb else float("nan")})
+    systems = [label for label, _ in runs] + sorted({r["system"] for r in c_rows})
     langs = [l for l in LANG_ORDER if any((s, l) in vals for s in systems)]
     if not langs:
         return None
     fig, ax = new_fig(max(6, 1.8 * len(systems) + 2), 4.5)
-    grouped_bars(ax, systems, langs, vals, errs, LANG_COLORS, LANG_LABEL)
+    grouped_bars(ax, systems, langs, vals, errs, LANG_COLORS, LANG_LABEL, rotation=20)
     style_axes(ax, ylabel="Detection rate (TPR)", title=title)
-    legend(ax, ncol=min(5, len(langs)), loc="upper left", bbox_to_anchor=(0, -0.08))
+    legend(ax, ncol=min(5, len(langs)), loc="upper left", bbox_to_anchor=(0, -0.3))
     write_csv(cfg.results_dir / f"{name}.csv", rows_out)
     return save(fig, cfg.figures_dir / f"{name}.png")
 
@@ -412,16 +432,16 @@ def fig_mcp(cfg: Config):
         return None
     scanners = sorted({r["scanner"] for r in rows})
     kinds = [k for k in MCP_KIND_LABEL if any(r["kind"] == k for r in rows)]
-    fig, axes = plt.subplots(1, len(kinds), figsize=(4.5 * len(kinds) + 1, 4.2), facecolor=SURFACE,
+    fig, axes = plt.subplots(1, len(kinds), figsize=(6 * len(kinds) + 1, 5.2), facecolor=SURFACE,
                              squeeze=False, sharey=True)
     for ax, kind in zip(axes[0], kinds):
         vals = {(r["scanner"], r["lang"]): f(r["rate"]) for r in rows if r["kind"] == kind}
         errs = {(r["scanner"], r["lang"]): (f(r["ci_lo"]), f(r["ci_hi"])) for r in rows if r["kind"] == kind}
         langs = [l for l in LANG_ORDER if any((s, l) in vals for s in scanners)]
-        grouped_bars(ax, scanners, langs, vals, errs, LANG_COLORS, LANG_LABEL)
+        grouped_bars(ax, scanners, langs, vals, errs, LANG_COLORS, LANG_LABEL, rotation=35)
         style_axes(ax, title=MCP_KIND_LABEL[kind],
                    ylabel="Flagged rate" if ax is axes[0][0] else None, ylim=(0, 1.05))
-    legend(axes[0][0], loc="upper left", bbox_to_anchor=(0, -0.1), ncol=4)
+    legend(axes[0][-1], loc="lower right", bbox_to_anchor=(1, 1.1), ncol=4)
     fig.suptitle("MCP scanners: share of server variants flagged, by language", color=INK, fontsize=11,
                  x=0.01, ha="left")
     return save(fig, cfg.figures_dir / "fig8_mcp_scanners.png")

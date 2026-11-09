@@ -1,0 +1,20 @@
+{
+  "produced": {
+    "fig1": "figures/fig1_detection_by_lang.png",
+    "fig2": "figures/fig2_fpr_by_lang.png",
+    "fig3": "figures/fig3_roc_by_classifier.png",
+    "table6": "results/table_detection_drop.csv",
+    "fig4": "figures/fig4_asr_by_lang.png",
+    "fig5": "figures/fig5_asr_heatmap_style_lang.png",
+    "fig7a": "figures/fig7a_detector_tpr_vs_data.png",
+    "fig7b": "figures/fig7b_detector_fpr_vs_data.png",
+    "fig7c": "figures/fig7c_best_detector_vs_classifiers.png",
+    "fig7d": "figures/fig7d_heldout_style.png",
+    "fig7e": "figures/fig7e_native_set.png",
+    "fig8": "figures/fig8_mcp_scanners.png",
+    "qualitative": "results/qualitative_failures.md"
+  },
+  "skipped": [
+    "fig9"
+  ]
+}

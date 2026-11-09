@@ -1,0 +1,33 @@
+system,set,lang_condition,n,tp,tpr,n_benign,fp,fpr
+fine-tuned mdistilbert (+100%),heldout_style,en,80,28,0.35,105,1,0.009523809523809525
+fine-tuned mdistilbert (+100%),heldout_style,ur,79,29,0.3670886075949367,105,2,0.01904761904761905
+fine-tuned mdistilbert (+100%),heldout_style,roman_ur,80,25,0.3125,105,3,0.02857142857142857
+fine-tuned mdistilbert (+100%),heldout_style,mixed,80,26,0.325,105,4,0.0380952380952381
+fine-tuned xlmr-base (+0%),heldout_style,en,80,80,1.0,105,0,0.0
+fine-tuned xlmr-base (+0%),heldout_style,ur,79,73,0.9240506329113924,105,2,0.01904761904761905
+fine-tuned xlmr-base (+0%),heldout_style,roman_ur,80,70,0.875,105,3,0.02857142857142857
+fine-tuned xlmr-base (+0%),heldout_style,mixed,80,76,0.95,105,2,0.01904761904761905
+horizon-guard,heldout_style,en,80,80,1.0,105,1,0.009523809523809525
+horizon-guard,heldout_style,ur,79,70,0.8860759493670886,105,1,0.009523809523809525
+horizon-guard,heldout_style,roman_ur,80,64,0.8,105,0,0.0
+horizon-guard,heldout_style,mixed,80,75,0.9375,105,0,0.0
+prompt-guard-2,heldout_style,en,80,30,0.375,105,0,0.0
+prompt-guard-2,heldout_style,ur,79,4,0.05063291139240506,105,0,0.0
+prompt-guard-2,heldout_style,roman_ur,80,4,0.05,105,0,0.0
+prompt-guard-2,heldout_style,mixed,80,13,0.1625,105,0,0.0
+prompt-guard-2-22m,heldout_style,en,80,5,0.0625,105,0,0.0
+prompt-guard-2-22m,heldout_style,ur,79,0,0.0,105,0,0.0
+prompt-guard-2-22m,heldout_style,roman_ur,80,1,0.0125,105,0,0.0
+prompt-guard-2-22m,heldout_style,mixed,80,6,0.075,105,0,0.0
+protectai-v2,heldout_style,en,80,68,0.85,105,1,0.009523809523809525
+protectai-v2,heldout_style,ur,79,72,0.9113924050632911,105,94,0.8952380952380953
+protectai-v2,heldout_style,roman_ur,80,69,0.8625,105,15,0.14285714285714285
+protectai-v2,heldout_style,mixed,80,76,0.95,105,15,0.14285714285714285
+proventra-mdeberta,heldout_style,en,80,68,0.85,105,0,0.0
+proventra-mdeberta,heldout_style,ur,79,78,0.9873417721518988,105,6,0.05714285714285714
+proventra-mdeberta,heldout_style,roman_ur,80,79,0.9875,105,14,0.13333333333333333
+proventra-mdeberta,heldout_style,mixed,80,79,0.9875,105,10,0.09523809523809523
+wolf-defender,heldout_style,en,80,75,0.9375,105,0,0.0
+wolf-defender,heldout_style,ur,79,58,0.7341772151898734,105,2,0.01904761904761905
+wolf-defender,heldout_style,roman_ur,80,31,0.3875,105,0,0.0
+wolf-defender,heldout_style,mixed,80,49,0.6125,105,0,0.0

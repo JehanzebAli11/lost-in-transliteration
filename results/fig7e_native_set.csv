@@ -1,0 +1,9 @@
+system,set,lang_condition,n,tp,tpr,n_benign,fp,fpr
+fine-tuned mdistilbert (+100%),native,native,57,14,0.24561403508771928,57,0,0.0
+fine-tuned xlmr-base (+0%),native,native,57,41,0.7192982456140351,57,1,0.017543859649122806
+horizon-guard,native,native,57,44,0.7719298245614035,57,0,0.0
+prompt-guard-2,native,native,57,1,0.017543859649122806,57,0,0.0
+prompt-guard-2-22m,native,native,57,1,0.017543859649122806,57,0,0.0
+protectai-v2,native,native,57,44,0.7719298245614035,57,12,0.21052631578947367
+proventra-mdeberta,native,native,57,55,0.9649122807017544,57,6,0.10526315789473684
+wolf-defender,native,native,57,27,0.47368421052631576,57,1,0.017543859649122806

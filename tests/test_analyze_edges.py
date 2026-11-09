@@ -31,3 +31,14 @@ def test_grouped_bars_tolerates_bounds_past_the_rate():
     fig, ax = plt.subplots()
     analyze.grouped_bars(ax, ["a"], ["en", "ur"], vals, errs)
     plt.close(fig)
+
+
+def test_best_per_base_applies_the_test_auc_rule_within_each_base():
+    def row(base, pct, lang, auc, gs="test"):
+        return {"base": base, "pct": str(pct), "group_set": gs, "lang_condition": lang, "auc_mean": str(auc)}
+    curve = [row("a", 0, "en", 0.90), row("a", 0, "ur", 0.80), row("a", 100, "en", 1.0), row("a", 100, "ur", 1.0),
+             row("b", 0, "en", 0.99), row("b", 0, "ur", 0.99), row("b", 100, "en", 0.95), row("b", 100, "ur", 0.97),
+             row("b", 100, "native", 1.0, gs="native")]  # other sets never drive the choice
+    assert analyze.best_per_base(curve) == [("a", 100), ("b", 0)]
+    assert analyze.best_detector(curve) == ("a", 100)  # overall rule unchanged
+    assert analyze.best_per_base([]) == []
