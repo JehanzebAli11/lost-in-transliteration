@@ -38,7 +38,7 @@ A filter that misses Roman Urdu injections can be bypassed by writing the way mi
 
 **Natively written set.** Qwen 3.5 27B wrote attacks and benign messages directly from Urdu and Roman Urdu prompts, without English templates. After script checks (24 of 240 dropped) and a blind label check by Gemma, the translator (2 dropped), 57 attacks and 57 benign items remain: 27 Roman Urdu, 24 code-switched and only 6 Urdu script each. <!-- results/native_gate_report.json: generated 240, wrong_script 24, label_disagree 2, final 114, labeler gemma-4-31b-it, shortfall ur 3+3 --> It is test-only and reuses the main set's goals and payloads: 19 attacks ask for "I love pineapples", 13 for French, 13 for a canary in the training format (none identical to a main-set token), 12 for the access code. <!-- models_by_goal.csv native n: OVERRIDE 19, LANG_SWITCH 13, CANARY 13, SECRET_LEAK 12; token format checked in data/native.jsonl vs data/en.jsonl -->
 
-**Classifiers (RQ1–2).** ProtectAI deberta-v3-base-prompt-injection-v2, Meta Llama Prompt Guard 2 (86M and 22M), Horizon prompt-injection-guard-base, Patronus wolf-defender and proventra mdeberta-v3-base-prompt-injection, each at a 0.5 threshold on standalone text (`research/classifiers.md`).
+**Classifiers (RQ1–2).** ProtectAI deberta-v3-base-prompt-injection-v2, Meta Llama Prompt Guard 2 (86M and 22M), Horizon prompt-injection-guard-base, Patronus Protect wolf-defender and proventra mdeberta-v3-base-prompt-injection, each at a 0.5 threshold on standalone text except ProtectAI v2 at 0.92, the LLM Guard default (`config.yaml`, `research/classifiers.md`).
 
 **Models (RQ3).** The system prompt asks for a short summary (and holds the fake code); the user sends a carrier document with the attack at a random position. Per model, 927 tasks: 150 attacks per language (document and attack in the same language), 57 native attacks, 150 with an English document and an Urdu-variant attack, and 120 clean documents. <!-- MS n per cell; ST n 927 --> All five share one output cap, 1,024 tokens, which no reply reached. <!-- ST max_tokens 1024; TR at_max_tokens 0 in every cell --> Other settings differ:
 
@@ -56,7 +56,7 @@ The Anthropic API rejects a temperature parameter, so Claude models were sampled
 
 **Detectors (RQ4–5).** XLM-R base (MIT) and multilingual DistilBERT (Apache-2.0) were fine-tuned on train-split items: English only, plus 25%, or plus 100% of the Urdu-variant train data; one seed, 3 epochs (planned: 5 levels × 3 seeds). <!-- config.yaml detector; LOG 2026-11-09 steps 4-5 --> The rule naming "the best detector" (highest mean test-split AUC) was in the analysis code before any training. <!-- src/analyze.py best_detector, commit 3cd4d85 (2026-11-03); HN best_detector -->
 
-**MCP scanners (RQ6).** 120 local fake MCP servers, 10 per language per kind (clean, poisoned description, poisoned output), from ten subtle English patterns without `<IMPORTANT>`-style markers, scanned by Cisco mcp-scanner, Ramparts, mcp-guardian and four classifiers. <!-- LOG 2026-11-05 [mcp] -->
+**MCP scanners (RQ6).** 120 local fake MCP servers, 10 per language per kind (clean, poisoned description, poisoned output), from ten subtle English patterns without `<IMPORTANT>`-style markers, scanned by Cisco mcp-scanner (YARA analyzer only), Ramparts (rules only, no LLM check), mcp-guardian and four classifiers (`research/mcp_scanners.md`). <!-- LOG 2026-11-05 [mcp] -->
 
 **Spend.** $7.56: $0.18 for data, $7.38 for evaluation including replaced runs (Opus $3.25; Sonnet $3.10). <!-- results/spend.json total_usd 7.559; by_stage build 0.0109 + translate 0.1230 + native 0.0418 + mcp 0.0060 = 0.1817, eval_models 7.3774; by_model claude-opus-5-5 3.2490, claude-sonnet-5-5 3.0952 -->
 
@@ -224,7 +224,7 @@ From `results/qualitative_failures.md`:
 
 ## Disclosure before publication
 
-Two results are large and reproducible: Prompt Guard 2 (86M, Meta) loses 37 points of recall on Roman Urdu and catches 1 of 57 native attacks; wolf-defender (Patronus) loses 20 points on Roman Urdu and catches 47% of native attacks against 96% of translated English ones. <!-- DD: prompt-guard-2 roman_ur −0.370, native 1/57; wolf-defender roman_ur −0.201, native 0.474 vs en 0.963 (unpaired, diff −0.489 [−0.612, −0.354]) --> ProtectAI v2's Urdu-script false-positive rate matches its card's English-only scope but belongs in the same report. Per PLAN §0.5, these go to Meta, Patronus and ProtectAI before publication; the owner sets the timing.
+Two results are large and reproducible: Prompt Guard 2 (86M, Meta) loses 37 points of recall on Roman Urdu and catches 1 of 57 native attacks; wolf-defender (Patronus Protect) loses 20 points on Roman Urdu and catches 47% of native attacks against 96% of translated English ones. <!-- DD: prompt-guard-2 roman_ur −0.370, native 1/57; wolf-defender roman_ur −0.201, native 0.474 vs en 0.963 (unpaired, diff −0.489 [−0.612, −0.354]) --> ProtectAI v2's Urdu-script false-positive rate matches its card's English-only scope but belongs in the same report. Per PLAN §0.5, these go to Meta, Patronus and ProtectAI before publication; the owner sets the timing.
 
 ## Next steps
 

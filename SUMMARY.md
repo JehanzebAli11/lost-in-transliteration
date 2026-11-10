@@ -29,6 +29,6 @@ $7.56 of the $40 cap: $0.18 for data, $7.38 for model evaluation including runs 
 ## Owner's next steps
 
 1. Review the revised `writeup/post.md` and `writeup/application_blurb.md` (changes in `writeup/REVISION.md`). The blurb's last personal line is an agent draft; replace it with your own words.
-2. Disclosure (PLAN §0.5) before any public post: send the Prompt Guard 2 (Meta), wolf-defender (Patronus) and ProtectAI v2 findings to the vendors.
+2. Disclosure (PLAN §0.5) before any public post: send the Prompt Guard 2 (Meta), wolf-defender (Patronus Protect) and ProtectAI v2 findings to the vendors.
 3. Optional: the full 5 × 3 detector design (about 40 min on the Mac), Valar (`VALAR_API_URL`/`VALAR_API_KEY`, then `make eval-valar analyze`).
 4. Choose a licence. Trained weights stay in `models/` (git-ignored); decide whether to share them.
