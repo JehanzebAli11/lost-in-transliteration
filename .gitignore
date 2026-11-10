@@ -47,3 +47,6 @@ nohup.out
 *.swp
 .idea/
 .vscode/
+
+# vendor heads-up drafts stay private until sent (13 Nov)
+writeup/disclosure/
