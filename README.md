@@ -54,4 +54,4 @@ LOG.md             what ran, what broke, decisions;  HANDOFF.md  session handoff
 
 ## Licence
 
-_The owner chooses a licence before publishing._ Third-party models keep their own licences. The detector bases are `FacebookAI/xlm-roberta-base` (MIT) and `distilbert/distilbert-base-multilingual-cased` (Apache-2.0), both checked 2026-11-09. Classifier licences are listed in `research/classifiers.md`.
+This repository is licensed under Apache-2.0 ([LICENSE](LICENSE)). Third-party models, classifiers and scanners keep their own licences. The detector bases are `FacebookAI/xlm-roberta-base` (MIT) and `distilbert/distilbert-base-multilingual-cased` (Apache-2.0), both checked 2026-11-09. Classifier licences are listed in `research/classifiers.md`.
